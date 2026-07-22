@@ -1,0 +1,746 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Großes Quiz Forschungsmethoden 2</title>
+<style>
+:root {
+  --bg1:#050816; --bg2:#1b1f4b; --card:rgba(255,255,255,.72);
+  --text:#172033; --muted:#667085; --ok:#0f7b32; --bad:#b42318;
+  --line:#d0d5dd; --accent:#344054; --pulse:0;
+}
+* { box-sizing:border-box; }
+html, body { min-height:100%; }
+body {
+  margin:0;
+  font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+  color:var(--text);
+  overflow-x:hidden;
+  background:
+    radial-gradient(circle at calc(18% + var(--pulse)*14%) 18%, rgba(136,72,255,.62), transparent 38%),
+    radial-gradient(circle at 82% calc(72% - var(--pulse)*12%), rgba(0,229,255,.48), transparent 42%),
+    linear-gradient(135deg,var(--bg1),var(--bg2));
+  background-attachment:fixed;
+}
+body::before {
+  content:"";
+  position:fixed; inset:-20%;
+  pointer-events:none; z-index:-1;
+  background:
+    conic-gradient(from calc(var(--pulse)*180deg),
+      rgba(255,255,255,.04), rgba(153,70,255,.32),
+      rgba(0,229,255,.28), rgba(255,255,255,.04));
+  filter:blur(calc(24px + var(--pulse)*38px)) saturate(1.35);
+  transform:scale(calc(1 + var(--pulse)*.14)) rotate(calc(var(--pulse)*12deg));
+  transition:transform .08s linear, filter .08s linear;
+}
+.wrap { max-width:960px; margin:0 auto; padding:24px; }
+.card {
+  background:var(--card); border:1px solid rgba(255,255,255,.38);
+  border-radius:20px; padding:24px;
+  box-shadow:0 16px 40px rgba(16,24,40,.22);
+  backdrop-filter:blur(10px) saturate(1.2);
+}
+h1 { margin:0 0 8px; font-size:clamp(1.6rem,2.8vw,2.3rem); }
+.sub { color:var(--muted); margin:0 0 18px; }
+.toolbar { display:flex; gap:12px; flex-wrap:wrap; align-items:center; margin-bottom:18px; }
+.music-player {
+  display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+  padding:10px 12px; border:1px solid var(--line); border-radius:14px; background:#fff;
+}
+.music-player button, .mainbtn {
+  border:0; border-radius:12px; padding:11px 15px;
+  background:#344054; color:#fff; cursor:pointer; font-weight:700;
+}
+.secondary {
+  border:1px solid var(--line); border-radius:12px; padding:11px 15px;
+  background:#fff; color:#344054; cursor:pointer; font-weight:700;
+}
+.music-player input[type=range] { width:120px; }
+.mode-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:14px; margin:18px 0; }
+.mode-card { border:1px solid var(--line); border-radius:16px; padding:18px; background:#fff; }
+.mode-card h3 { margin:0 0 6px; }
+.mode-card p { color:var(--muted); min-height:48px; }
+.topbar { display:flex; gap:12px; flex-wrap:wrap; justify-content:space-between; align-items:center; }
+.pill { border:1px solid var(--line); border-radius:999px; padding:8px 12px; background:#fff; font-weight:700; }
+.progress { height:10px; border-radius:999px; background:#eaecf0; overflow:hidden; margin:14px 0 20px; }
+.progress > div { height:100%; width:0; background:#344054; transition:.25s; }
+.question { font-size:1.2rem; line-height:1.45; font-weight:750; margin:16px 0 18px; }
+.answers { display:grid; gap:10px; }
+.answer {
+  width:100%; text-align:left; border:1.5px solid var(--line); border-radius:14px;
+  padding:14px 16px; background:#fff; cursor:pointer; transition:.15s;
+}
+.answer:hover:not(:disabled) { transform:translateY(-1px); border-color:#98a2b3; }
+.answer.selected { border-color:#344054; background:#f2f4f7; }
+.answer.correct { border-color:var(--ok); background:#ecfdf3; }
+.answer.wrong { border-color:var(--bad); background:#fef3f2; }
+.letter { display:inline-flex; min-width:32px; font-weight:800; }
+.feedback { min-height:30px; margin:18px 0 8px; font-weight:800; }
+.feedback.ok { color:var(--ok); } .feedback.bad { color:var(--bad); }
+.actions { display:flex; gap:10px; flex-wrap:wrap; margin-top:18px; }
+.small { font-size:.95rem; color:var(--muted); }
+.hidden { display:none !important; }
+.result { font-size:1.15rem; line-height:1.5; }
+.review { margin-top:22px; display:grid; gap:12px; }
+.review-item { border:1px solid var(--line); border-radius:14px; padding:14px; background:#fff; }
+.review-item b { display:block; margin-bottom:6px; }
+label { display:flex; align-items:center; gap:8px; }
+input[type=checkbox] { width:18px; height:18px; }
+
+body.color-mode-off {
+  background:#eef1f6 !important;
+}
+body.color-mode-off::before {
+  opacity:0 !important;
+}
+body.color-mode-off .card {
+  background:rgba(255,255,255,.96);
+  backdrop-filter:none;
+}
+.color-toggle {
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:10px 12px;
+  border:1px solid var(--line);
+  border-radius:14px;
+  background:rgba(255,255,255,.88);
+}
+.color-toggle input {
+  width:18px;
+  height:18px;
+}
+
+
+.challenge-setup {
+  display:grid;
+  gap:10px;
+  margin-top:12px;
+}
+.challenge-setup input {
+  width:100%;
+  padding:11px 12px;
+  border:1px solid var(--line);
+  border-radius:12px;
+  font:inherit;
+}
+.timer {
+  font-variant-numeric:tabular-nums;
+  min-width:86px;
+  text-align:center;
+}
+.timer.danger {
+  color:#b42318;
+  border-color:#fda29b;
+  background:#fff1f0;
+  animation:timerPulse .75s infinite alternate;
+}
+@keyframes timerPulse {
+  from { transform:scale(1); }
+  to { transform:scale(1.05); }
+}
+.leaderboard {
+  margin-top:18px;
+  overflow-x:auto;
+}
+.leaderboard table {
+  width:100%;
+  border-collapse:collapse;
+  background:rgba(255,255,255,.84);
+  border-radius:14px;
+  overflow:hidden;
+}
+.leaderboard th, .leaderboard td {
+  padding:10px 12px;
+  text-align:left;
+  border-bottom:1px solid var(--line);
+}
+.leaderboard th {
+  background:rgba(242,244,247,.95);
+}
+.leaderboard tr:last-child td {
+  border-bottom:0;
+}
+.leaderboard .rank {
+  font-weight:800;
+  width:58px;
+}
+
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <h1>Großes Quiz Forschungsmethoden 2</h1>
+    <p class="sub">184 Fragen insgesamt – mit Lernmodus und 60-Fragen-Testklausur.</p>
+
+    <div class="toolbar">
+      <label class="color-toggle">
+        <input id="colorModeToggle" type="checkbox" checked>
+        Farbmodus
+      </label>
+      <div class="music-player">
+        <button id="musicToggle" type="button">▶ Musik</button>
+        <span class="small">Deep Work – Flow State</span>
+        <label class="small">Lautstärke
+          <input id="musicVolume" type="range" min="0" max="1" step="0.05" value="0.35">
+        </label>
+        <audio id="quizMusic" preload="none" loop>
+          <source src="music.mp3" type="audio/mpeg">
+        </audio>
+      </div>
+    </div>
+
+    <section id="startScreen">
+      <div class="mode-grid">
+        <div class="mode-card">
+          <h3>Lernmodus</h3>
+          <p>Alle Fragen, sofortige Rückmeldung nach jeder Antwort.</p>
+          <button class="mainbtn" onclick="startMode('learn')">Lernmodus starten</button>
+        </div>
+        <div class="mode-card">
+          <h3>Testklausur</h3>
+          <p>60 zufällige Fragen. Keine Rückmeldung währenddessen; Ergebnis erst am Ende.</p>
+          <button class="mainbtn" onclick="startMode('exam')">Testklausur starten</button>
+        </div>
+
+        <div class="mode-card">
+          <h3>2-Minuten-Challenge</h3>
+          <p>Beantworte in 2 Minuten so viele Fragen wie möglich und trage dich in die Rangliste ein.</p>
+          <div class="challenge-setup">
+            <input id="playerName" type="text" maxlength="24" placeholder="Dein Name" autocomplete="nickname">
+            <button class="mainbtn" onclick="startChallenge()">Challenge starten</button>
+          </div>
+        </div>
+
+        <div class="mode-card">
+          <h3>Fehlerschwerpunkt</h3>
+          <p>Wiederholt gezielt die Fragen, die du bisher besonders oft falsch beantwortet hast.</p>
+          <button class="mainbtn" id="weakModeBtn" onclick="startMode('weak')">Schwierige Fragen wiederholen</button>
+          <div class="small" id="weakModeInfo" style="margin-top:8px;"></div>
+        </div>
+      </div>
+      <label><input type="checkbox" id="shuffleAnswers"> Antwortmöglichkeiten zusätzlich mischen</label>
+
+      <div class="leaderboard">
+        <h3>Lokale Rangliste</h3>
+        <p class="small">Die Rangliste wird auf diesem Gerät im Browser gespeichert.</p>
+        <table>
+          <thead>
+            <tr><th>Platz</th><th>Name</th><th>Richtig</th><th>Beantwortet</th><th>Datum</th></tr>
+          </thead>
+          <tbody id="leaderboardBody"></tbody>
+        </table>
+        <div class="actions">
+          <button class="secondary" onclick="resetLeaderboard()">Rangliste zurücksetzen</button>
+        </div>
+      </div>
+
+      <div class="actions" style="margin-top:16px;">
+        <button class="secondary" onclick="resetLearningStats()">Gespeicherte Fehlerstatistik zurücksetzen</button>
+      </div>
+
+    </section>
+
+    <section id="quizScreen" class="hidden">
+      <div class="topbar">
+        <span class="pill" id="counter"></span>
+        <span class="pill" id="score"></span>
+        <span class="pill timer hidden" id="timer">02:00</span>
+        <span class="pill" id="modeLabel"></span>
+      </div>
+      <div class="progress"><div id="bar"></div></div>
+      <div class="small" id="originalNr"></div>
+      <div class="question" id="question"></div>
+      <div class="answers" id="answers"></div>
+      <div class="feedback" id="feedback"></div>
+      <div class="actions">
+        <button class="mainbtn" id="nextBtn" onclick="nextQuestion()" disabled>Nächste Frage</button>
+        <button class="secondary" onclick="restartQuiz()">Abbrechen</button>
+      </div>
+    </section>
+
+    <section id="endScreen" class="hidden">
+      <h2>Auswertung</h2>
+      <p class="result" id="finalResult"></p>
+      <div class="actions">
+        <button class="mainbtn" onclick="restartQuiz()">Zur Modusauswahl</button>
+        <button class="secondary" id="reviewBtn" onclick="toggleReview()">Antworten anzeigen</button>
+      </div>
+      <div id="review" class="review hidden"></div>
+    </section>
+  </div>
+</div>
+
+<script>
+const ALL_QUESTIONS = [{"nr": 1, "frage": "Gibt einen Zusammenhang zwischen Sternzeichen und Persönlichkeitseigenschaften?", "antworten": {"A": "Ja, für alle Menschen", "B": "Ja, aber nur für Männer über 50", "C": "Ja, aber nur bei Menschen die daran glauben", "D": "Nein", "E": "Darüber kann man keine Aussage machen, da die Datenlage noch unklar ist"}, "richtig": "D"}, {"nr": 2, "frage": "Führen gewaltvolle Videospiele zu mehr Aggressionen?", "antworten": {"A": "Ja, zu mehr physischer Aggression. Andere Arten der Aggression sind nicht betroffen.", "B": "Ja, zu mehr sozialer Aggression. Andere Arten der Aggression sind nicht betroffen.", "C": "Ja, zu mehr Cyberbullying. Andere Arten der Aggression sind nicht betroffen.", "D": "Ja zu mehr physischer Aggression und mehr sozialer Aggression.", "E": "Nein"}, "richtig": "E"}, {"nr": 3, "frage": "Gibt es Lernstile wie visuelle und auditive Lerner?", "antworten": {"A": "Ja, visuelle und auditive Lerner", "B": "Ja, kinästhetische und nicht-kinästhetische Lerner", "C": "Ja, logische und künstlerische Lerner", "D": "Ja, auditive und Lesen / Schreiben Lerner", "E": "Nein"}, "richtig": "E"}, {"nr": 4, "frage": "Wird Autismus durch Impfungen ausgelöst?", "antworten": {"A": "Nein", "B": "Ja, aber nur durch die MMR-Impfung", "C": "Ja, durch alle Impfungen", "D": "Ja, aber nur durch die Pocken-Impfung", "E": "Darüber kann man keine Aussage machen, da die Datenlage noch unklar ist"}, "richtig": "A"}, {"nr": 5, "frage": "Wirkt sich das Alter auf die gefühlte Einsamkeit aus?", "antworten": {"A": "Nein", "B": "Ja, das junge Erwachsenenalter und das hohe Lebensalter sind mit besonders hoher Einsamkeit verbunden", "C": "Ja, das Kindesalter ist mit besonders hoher Einsamkeit verbunden", "D": "Ja, das mittlere Lebensalter ist mit besonders hoher Einsamkeit verbunden", "E": "Ja, alle Altersstufen bis auf die Kindheit sind mit besonders hoher Einsamkeit verbunden"}, "richtig": "B"}, {"nr": 6, "frage": "Was ist die Hauptursache für Arbeitsunfähigkeit in Deutschland?", "antworten": {"A": "Rückenschmerzen", "B": "Kopfschmerzen", "C": "Depressionen", "D": "Rheuma", "E": "Angststörungen"}, "richtig": "C"}, {"nr": 7, "frage": "Was ist der Gegenstand der Psychologie als übergeordnete Disziplin?", "antworten": {"A": "Das Erleben, Verhalten und Handeln des Menschen", "B": "Die Persönlichkeit des Menschen", "C": "Das Heilen von psychischen Krankheiten", "D": "Das Sozialverhalten des Menschen", "E": "Die genetischen Grundlagen menschlichen Verhaltens"}, "richtig": "A"}, {"nr": 8, "frage": "Welcher der folgenden Begriffe zählt NICHT zu den 4 erklärten Zielen der wissenschaftlichen Psychologie? Psycholog*innen wollen menschliches Erleben, Verhalten und Handeln…", "antworten": {"A": "Beschreiben", "B": "Erklären", "C": "Vorhersagen", "D": "Verändern", "E": "Kontrollieren"}, "richtig": "E"}, {"nr": 9, "frage": "Psycholog*innen wollen menschliches Erleben, Verhalten und Handeln beschreiben. Welcher der folgenden Begriffe lässt sich NICHT diesem Forschungsfeld zuordnen:", "antworten": {"A": "Merkmale klassifizieren", "B": "Merkmale benennen", "C": "Merkmale definieren", "D": "Zusammenhänge erfassen", "E": "Ursachen ergründen"}, "richtig": "E"}, {"nr": 10, "frage": "Eine Doktorandin möchte mit einem Experiment überprüfen, ob Alkohol trinken die Selbstkontrolle vermindert. Welchem Ziel der wissenschaftlichen Psychologie lässt sich dieses Versuchsdesign zuordnen?", "antworten": {"A": "Beschreiben", "B": "Erklären", "C": "Vorhersagen", "D": "Verändern", "E": "Keinem Davon"}, "richtig": "B"}, {"nr": 11, "frage": "Was unterscheidet wissenschaftliche Zeitschriften von gewöhnlichen Zeitschriften?", "antworten": {"A": "Wissenschaftliche Zeitschriften haben in der Regel eine strenge Qualitätskontrolle durch das sogenannte Peer Review Verfahren.", "B": "Wissenschaftliche Zeitschriften haben in der Regel eine strenge Qualitätskontrolle durch das sogenannte Expert Trust Verfahren.", "C": "Wissenschaftliche Zeitschriften haben in der Regel eine strenge Qualitätskontrolle durch das sogenannte Expert Review Verfahren.", "D": "Wissenschaftliche Zeitschriften haben in der Regel eine strenge Qualitätskontrolle durch das sogenannte Peer Trust Verfahren.", "E": "Keine der oben genannten Alternativen trifft zu"}, "richtig": "A"}, {"nr": 12, "frage": "Was ist der allererste Schritt in jeder wissenschaftlichen Arbeit?", "antworten": {"A": "Versuchspersonen rekrutieren", "B": "Daten auswerten", "C": "Ethik-Votum einholen", "D": "Forschungsfrage formulieren", "E": "Keine der anderen genannten Alternativen ist korrekt"}, "richtig": "D"}, {"nr": 13, "frage": "Welche der folgenden Datenbanken zählt NICHT zu den verbreiteten Datenbanken in der wissenschaftlichen Psychologie?", "antworten": {"A": "PubMed", "B": "APA PsycInfo®", "C": "Web of Science", "D": "ScienceDirect", "E": "PubDirect"}, "richtig": "E"}, {"nr": 14, "frage": "Ein wissenschaftlicher Artikel wird in einer bekannten psychologischen Zeitschrift begutachtet. Autor*innen und Gutachter*innen erfahren gegenseitig NICHT ihre Namen. Wie nennt man diese Art des Reviews?", "antworten": {"A": "Double Secret Review", "B": "Double Secure Review", "C": "Double Blind Review", "D": "Double Hidden Review", "E": "Double Anonymous Review"}, "richtig": "C"}, {"nr": 15, "frage": "Welcher Begriff ist NICHT Teil des Kreislaufs der empirischen Forschung?", "antworten": {"A": "Theorie", "B": "Praxis", "C": "Interpretation", "D": "Operationalisierung", "E": "Hypothese"}, "richtig": "B"}, {"nr": 16, "frage": "Welche der folgenden Begriffe kennzeichnet KEIN Qualitätskriterium einer guten Theorie?", "antworten": {"A": "Explizit", "B": "Implizit", "C": "Widerspruchsfrei", "D": "Überprüfbar", "E": "Falsifizierbar"}, "richtig": "B"}, {"nr": 17, "frage": "Deduktion ist…", "antworten": {"A": "… die Ableitung des Einzelnen aus dem Allgemeinen", "B": "… die Ableitung des Allgemeinen aus dem Einzelnen", "C": "… die Ableitung der Forschungsfrage aus dem Forschungsthema", "D": "… die Ableitung der Operationalisierung aus der Theorie", "E": "Keine der genannten Aussagen stimmt"}, "richtig": "A"}, {"nr": 18, "frage": "Induktion ist…", "antworten": {"A": "die Ableitung der Forschungsfrage aus dem Forschungsthema", "B": "die Ableitung der Operationalisierung aus der Theorie", "C": "das Schlussfolgern über Gesetzmäßigkeiten auf Basis von Einzelfällen", "D": "das Schlussfolgern über Einzelfälle auf Basis von Gesetzmäßigkeiten", "E": "Keine der genannten Aussagen stimmt"}, "richtig": "C"}, {"nr": 19, "frage": "Was ist eine Hypothese?", "antworten": {"A": "Eine vorläufige Antwort, die Forschende auf ihre Fragen geben", "B": "Eine finale Antwort, die Forschende auf ihre Fragen geben", "C": "Eine Art der Datenerhebung", "D": "Das Gegenteil von Theorie", "E": "Keine der genannten Antworten stimmt"}, "richtig": "A"}, {"nr": 20, "frage": "Lesen Sie folgenden Hypothese: „Die Wahrscheinlichkeit, einen TikTok Account zu haben, steigt ab dem 8. Lebensjahr und nimmt ab dem 21. Lebensjahr wieder ab.“. Um welche Form der Hypothese handelt es sich hier?", "antworten": {"A": "Zusammenhangshypothese", "B": "Effekthypothese", "C": "Wenn-dann Hypothese", "D": "Je-Desto Hypothese", "E": "Keine der genannten Antworten stimmt"}, "richtig": "E"}, {"nr": 21, "frage": "Quantitative Methoden haben im Vergleich zu qualitativen Methoden Vorteile. Welcher dieser 5 Punkte zählt NICHT dazu?", "antworten": {"A": "Präzision", "B": "Vergleichbarkeit", "C": "Verknüpfbarkeit", "D": "Flexibilität", "E": "Übersichtlichkeit"}, "richtig": "D"}, {"nr": 22, "frage": "Der HAWIE ist ein Beispiel für einen…", "antworten": {"A": "Persönlichkeitstest", "B": "Leistungstestv", "C": "Klinisch-diagnostischen Test", "D": "Beziehungstest", "E": "Keine der genannten Antworten stimmt"}, "richtig": "B"}, {"nr": 23, "frage": "Der NEO-FFI ist ein Beispiel für einen…", "antworten": {"A": "Persönlichkeitstest", "B": "Leistungstest", "C": "Klinisch-diagnostischen Test", "D": "Beziehungstest", "E": "Keine der anderen genannten Antworten stimmt"}, "richtig": "A"}, {"nr": 24, "frage": "Welche dieser Aussagen stimmt für einen Leistungstest?", "antworten": {"A": "Kognitive Fähigkeiten und Persönlichkeit sind wichtig", "B": "Kognitive Fähigkeiten und Leistungsmotivation sind wichtig", "C": "Persönlichkeit und Leistungsmotivation sind wichtig", "D": "Leistungsmotivation und soziale Aspekte sind wichtig", "E": "Soziale Aspekte und Emotionale Aspekte sind wichtig"}, "richtig": "B"}, {"nr": 25, "frage": "Die 5 Skalen des NEO-FFI sind:", "antworten": {"A": "Neurotizismus, Extraversion, Offenheit, Funktionalität, Fitness", "B": "Neurotizismus, Extraversion, Offenheit, Verträglichkeit, Intelligenz", "C": "Neurotizismus, Extraversion, Offenheit, Verträglichkeit, Gewissenhaftigkeit", "D": "Neurotizismus, Extraversion, Offenheit, Verträglichkeit, Motivation", "E": "Keine der genannten Antworten stimmt"}, "richtig": "C"}, {"nr": 26, "frage": "Welches Verfahren dient zur Messung der elektrischen Aktivität des Gehirns?", "antworten": {"A": "CT", "B": "PET", "C": "MRT", "D": "fMRT", "E": "EEG"}, "richtig": "E"}, {"nr": 27, "frage": "EEG Alpha Wellen sind verbunden mit:", "antworten": {"A": "Tiefschlaf", "B": "Leichter Schlaf", "C": "Entspannter Wachzustand", "D": "Konzentriertes Arbeiten", "E": "Extremer Stress"}, "richtig": "C"}, {"nr": 28, "frage": "Was ist der zentrale Nachteil des PET?", "antworten": {"A": "Versuchsperson muss betäubt werden", "B": "Versuchsperson kriegt radioaktiven Stoff injiziert", "C": "Versuchsperson darf 24 Stunden davor nichts essen und trinken", "D": "Versuchsperson darf keine Piercings oder Ohrringe aus Metall haben", "E": "Keine der anderen genannten Antworten stimmt"}, "richtig": "B"}, {"nr": 29, "frage": "fMRT zeigt…", "antworten": {"A": "Veränderungen in der elektrischen Aktivität des Gehirns", "B": "Veränderungen in der Sauerstoffsättigung des Gehirns", "C": "Veränderungen in weißen Substanz des Gehirns", "D": "Veränderungen in der grauen Substanz des Gehirns", "E": "Keine dieser Antworten stimmt"}, "richtig": "B"}, {"nr": 30, "frage": "Wozu dient die Forschungsmethode DTI?", "antworten": {"A": "Darstellung der Sauerstoffsättigung des Gehirns", "B": "Darstellung der grauen Substanz", "C": "Darstellung der weißen Substanz", "D": "Darstellung radioaktiver Isotope im Gehirn", "E": "Keine dieser Antworten stimmt"}, "richtig": "C"}, {"nr": 31, "frage": "Die Messung der Hautleitfähigkeit ist eine besonders wichtige Forschungsmethode bei welchen 2 Störungsbildern?", "antworten": {"A": "Depressionen & Borderline-Persönlichkeitsstörung", "B": "PTSD & Angststörungen", "C": "Schizophrenie & Essstörungen", "D": "Zwangsstörungen & antisoziale Persönlichkeitsstörung", "E": "Bipolare Störung & Schlafstörungen"}, "richtig": "B"}, {"nr": 32, "frage": "Was misst ein EMG?", "antworten": {"A": "Elektrische Aktivität von Nervenzellen im Gehirn", "B": "Elektrische Aktivität von Muskeln", "C": "Elektrische Aktivität der Augen", "D": "Elektrische Aktivität des Herzens", "E": "Elektrische Aktivität die durch Schwitzen ausgelöst wird"}, "richtig": "B"}, {"nr": 33, "frage": "Wie beeinflussen Gene und Umwelt psychische Erkrankungen am ehesten?", "antworten": {"A": "Interindividuelle Unterschiede in der DNA bedingen psychische Erkrankungen. Die Umwelt spielt keine Rolle", "B": "Die Umwelt (z.B. frühkindliche Erfahrungen) bedingen psychische Erkrankungen. Die Gene spielen keine Rolle.", "C": "Interindividuelle Unterschiede in der DNA bedingen Unterschiede in der Vulnerabilität oder Resilienz gegenüber Risikofaktoren für psychische Erkrankungen.", "D": "Weder Gene noch Umwelt spielen eine Rolle, der Zufall bedingt psychische Erkrankungen.", "E": "Keine der anderen genannten Aussagen stimmt."}, "richtig": "C"}, {"nr": 34, "frage": "Wie viele genetische Risikovarianten gibt es für Depressionen?", "antworten": {"A": "11", "B": "22", "C": "33", "D": "44", "E": "55"}, "richtig": "D"}, {"nr": 35, "frage": "Wie Welche der folgenden Punkte zählt NICHT zu den Vorteilen von Datenerhebungen im Internet?", "antworten": {"A": "Es können größere Stichproben erhoben werden", "B": "Die Zeitökonomie ist besser", "C": "Versuchsleitereffekten fallen weg", "D": "Die Diversity der Stichprobe ist höher", "E": "Es kann besser kontrolliert werden, ob die Teilnehmenden die Instruktionen verstanden haben"}, "richtig": "E"}, {"nr": 36, "frage": "Das 3-Schichten Modell der Seele kommt von…", "antworten": {"A": "Platon", "B": "Freud", "C": "Ebbinghaus", "D": "Wundt", "E": "Skinner"}, "richtig": "A"}, {"nr": 37, "frage": "Wann und wo wurde das erste Psychologie Labor der Welt gegründet?", "antworten": {"A": "1693 in Kopenhagen", "B": "1764 in Harvard", "C": "1879 in Leipzig", "D": "1884 in Berlin", "E": "1900 in Hamburg"}, "richtig": "C"}, {"nr": 38, "frage": "Der Begründer der Gedächtnisforschung in der Psychologie war…", "antworten": {"A": "Wilhelm Dilthey", "B": "Hermann Ebbinghaus", "C": "Wilhelm Wundt", "D": "Friedrich Anton Meßmer", "E": "Keine der genannten Personen"}, "richtig": "B"}, {"nr": 39, "frage": "Der Begründer der verstehenden Psychologie war…", "antworten": {"A": "Wilhelm Dilthey", "B": "Hermann Ebbinghaus", "C": "Wilhelm Wundt", "D": "Friedrich Anton Meßmer", "E": "Keine der genannten Personen"}, "richtig": "A"}, {"nr": 40, "frage": "Wie viele psychologischen Institute gab es 1900 weltweit?", "antworten": {"A": "0", "B": "4", "C": "40", "D": "400", "E": "4000"}, "richtig": "C"}, {"nr": 41, "frage": "Was ist das Leitbild der praktischen Psychologie?", "antworten": {"A": "Wissenschaft auf der Grundlage von Praxis", "B": "Praxis auf der Grundlage von Intuition", "C": "Theorie auf der Grundlage von Praxis", "D": "Praxis auf der Grundlage von Wissenschaft", "E": "Keine dieser Aussagen stimmt"}, "richtig": "D"}, {"nr": 42, "frage": "Oswald Külpe gründete die …", "antworten": {"A": "Münchener Schule der Sportpsychologie", "B": "Leipziger Schule der Psychophysik", "C": "Würzburger Schule der Denkpsychologie", "D": "Hamburger Schule der Sinnespsychologie", "E": "Berliner Schule der Psychotherapie"}, "richtig": "C"}, {"nr": 43, "frage": "Welche der folgenden 5 Aspekte ist NICHT Teil des Gedankenflusses nach William James?", "antworten": {"A": "Das materielle Selbst", "B": "Das soziale Selbst", "C": "Das kognitive Selbst", "D": "Das geistige Selbst", "E": "Das reine Ich"}, "richtig": "C"}, {"nr": 44, "frage": "Was ist die zentrale Annahme der James-Lange Theorie der Emotion?", "antworten": {"A": "Gefühle sind Ursache, nicht Folge, körperlicher Empfindungen", "B": "Gefühle sind Folge, nicht Ursache, körperlicher Empfindungen", "C": "Gefühle sind Ursache, nicht Folge, von Kognitionen", "D": "Gefühle sind Folge, nicht Ursache, von Kognitionen", "E": "Gefühle kommen aus dem Unterbewussten"}, "richtig": "B"}, {"nr": 45, "frage": "Welcher der folgenden Begriffe bezeichnet einen Charaktertyp in der sogenannten „Vier- Säfte-Lehre“?", "antworten": {"A": "Hysteriker", "B": "Choleriker", "C": "Psychopath", "D": "Depressiver", "E": "Schizophrener"}, "richtig": "B"}, {"nr": 46, "frage": "Wer hat die Idee des Unbewussten zuerst prominent vertreten?", "antworten": {"A": "Albert Bandura", "B": "Ludwig Klages", "C": "Carl Gustav Carus", "D": "Siegmund Freud", "E": "Carl Gustav Jung"}, "richtig": "C"}, {"nr": 47, "frage": "Wann entstehen nach Jung psychische Störungen?", "antworten": {"A": "Wenn Triebansprüche vom Ich ins Es verdrängt werden", "B": "Wenn bestimmte Archetypen in einem Menschen übermächtig werden", "C": "Wenn kulturelle Einflüsse die natürliche Umwelt zu sehr zurückdrängen", "D": "Wenn das persönliche Unterbewusste das kollektive Unterbewusste verdrängt", "E": "Wenn negative Gedanken über Selbst, anderen Menschen und die Zukunft übermächtig werden"}, "richtig": "B"}, {"nr": 48, "frage": "Beurteilen Sie bitte die folgende Situation: Anna hasst es ihr Zimmer aufzuräumen. Ihre Mutter verspricht ihr, Ihren Lieblingskuchen zu backen, wenn Anna ihr Zimmer aufräumt. Anna räumt ihr Zimmer auf und bekommt ein Stück leckeren Kirschkuchen. Sie freut sich. In der nächsten Woche fragt sie Ihre Mutter, ob sie Ihr Zimmer wieder aufräumen soll und es wieder Kuchen geben wird. Welcher im Kontext des Behaviorismus häufig untersuchte Lernprozess spielt hier eine Rolle?", "antworten": {"A": "Klassische Konditionierung", "B": "Moderne Konditionierung", "C": "Operante Konditionierung", "D": "Praktische Konditionierung", "E": "Keine der genannten Antworten ist richtig"}, "richtig": "C"}, {"nr": 49, "frage": "Was ist eine Skinner-Box?", "antworten": {"A": "Ein Apparat mit dem in der frühen Wahrnehmungspsychologie das Tasten erfasst wurde", "B": "Ein reizarmer Käfig mit Reaktionshebeln und Futtergebern der im Behaviorismus verwendet wurde", "C": "Eine „magische Kiste“ die in der Populärpsychologie für Hypnose-Experimente verwendet wurde", "D": "Eine Metapher für innere Prozesse in der Kognitionspsychologie", "E": "Ein wichtiger Teil eines EEGs das der Verstärkung schwacher neuronaler Prozesse dient"}, "richtig": "B"}, {"nr": 50, "frage": "Welcher Wissenschaftler nutzte in seinen Studien die sogenannte Puzzlebox?", "antworten": {"A": "Carl Gustav Jung", "B": "Iwan P. Pawlow", "C": "Burrhus Frederic Skinner", "D": "John B. Watson", "E": "Edward Thorndike"}, "richtig": "E"}, {"nr": 51, "frage": "Die Magische Zahl 7 + / - 2 von Miller ist welchem Bereich der Psychologie zuzuordnen?", "antworten": {"A": "Behaviorismus", "B": "Tiefenpsychologie", "C": "Bewusstseinspsychologie", "D": "Angewandte Psychologie", "E": "Kognitionspsychologie"}, "richtig": "E"}, {"nr": 52, "frage": "Was untersucht die Kognitionspsychologie?", "antworten": {"A": "Die Beziehungen von Menschen miteinander", "B": "Die geistigen Leistungen des Menschen", "C": "Die Gefühle des Menschen", "D": "Die Motivation des Menschen", "E": "Die Persönlichkeit des Menschen"}, "richtig": "B"}, {"nr": 53, "frage": "Alan Baddeley fokussierte sich in seiner Forschung auf welchen Teil des Gedächtnisses?", "antworten": {"A": "Arbeitsgedächtnis", "B": "Ultrakurzzeitgedächtnis", "C": "Kurzzeitgedächtnis", "D": "Langzeitgedächtnis", "E": "Semantisches Gedächtnis"}, "richtig": "A"}, {"nr": 54, "frage": "Was war eine der großen wissenschaftlichen Leistungen von Albert Bandura?", "antworten": {"A": "Er verknüpfte Psychoanalyse und Lernforschung", "B": "Er führte intrinsische Variablen in die Lernforschung ein", "C": "Er nutzte das erste Mal Tiermodelle in der Lernforschung", "D": "Er wandte Ergebnisse aus der Lernforschung in Schulen an", "E": "Er entwarf eine speziesübergreifende Theorie der Lernforschung"}, "richtig": "B"}, {"nr": 55, "frage": "Die Bobo Doll Studie erfasste eine bestimmte Form des Lernens. Welche war das?", "antworten": {"A": "Lernen durch operante Konditionierung", "B": "Lernen durch klassische Konditionierung", "C": "Lernen durch Gewöhnung", "D": "Lernen durch Beobachtung", "E": "Lernen durch Bestrafung"}, "richtig": "D"}, {"nr": 56, "frage": "Der erste psychologische Intelligenztest wurde entwickelt von…", "antworten": {"A": "Arthur Kronfeld", "B": "James McKeen Cattell", "C": "Alfred Binet", "D": "Johann Christian Reil", "E": "Jean-Hippolyte Michon"}, "richtig": "C"}, {"nr": 57, "frage": "Der Rorschach Test zählt zu den…", "antworten": {"A": "Objektiven Testverfahren", "B": "Behavioristischen Testverfahren", "C": "Systemischen Testverfahren", "D": "Projektiven Testverfahren", "E": "Humanistischen Testverfahren"}, "richtig": "D"}, {"nr": 58, "frage": "In Deutschland gibt es 4 verschiedene ambulante Psychotherapieverfahren die für die Kostenerstattung durch die Kasse in Frage kommen. Welche der folgenden Therapieformen zählt NICHT dazu?", "antworten": {"A": "Verhaltenstherapie", "B": "Systemische Therapie", "C": "Tiefenpsychologisch fundierte Verfahren", "D": "Analytische Psychotherapie", "E": "Humanistische Therapie"}, "richtig": "E"}, {"nr": 59, "frage": "Welche dieser Aussagen über die Therapieverfahren „Systematische Desensibilisierung“ und „Flooding“ ist korrekt?", "antworten": {"A": "Sowohl „Systematische Desensibilisierung“ als auch „Flooding“ sind den systemischen Therapieverfahren zuzuordnen", "B": "„Systematische Desensibilisierung“ ist den systemischen Therapieverfahren zuzuordnen, aber „Flooding“ der Verhaltenstherapie", "C": "Sowohl „Systematische Desensibilisierung“ als auch „Flooding“ sind der Verhaltenstherapie zuzuordnen", "D": "Systematische Desensibilisierung“ ist den tiefenpsychologischen Therapieverfahren zuzuordnen, aber „Flooding“ der Verhaltenstherapie", "E": "Keine dieser Aussagen stimmt"}, "richtig": "C"}, {"nr": 60, "frage": "Bei welcher der folgenden Situationen ist die Therapiemethode „Flooding“ am erfolgversprechendsten?", "antworten": {"A": "Jürgen hat eine Reihe komplexer Ängste, unter anderem vor Hunden, Autos, Booten und Flugzeugen, aber auch Menschenmengen", "B": "Lisa leidet an der Borderline-Persönlichkeitsstörung. Zusätzlich hat sie mehrere Zwangsstörungen, unter anderem einen Waschzwang", "C": "Anne hat Angst vor Spinnen. Weitere Probleme hat sie nicht", "D": "Peter leidet an einer Binge-Eating Essstörung und depressiven Episoden", "E": "Marie hat eine antisoziale Persönlichkeitsstörung, sowie Panikattacken"}, "richtig": "C"}, {"nr": 61, "frage": "Damit eine Stichprobe repräsentativ für die Grundgesamtheit ist muss sie in der Regel was sein?", "antworten": {"A": "Eine Planstichprobe", "B": "Eine Zufallsstichprobe", "C": "Eine anfallende Stichprobe", "D": "Eine Quotenstichprobe", "E": "Eine theoretische Stichprobe"}, "richtig": "B"}, {"nr": 62, "frage": "Während einer Datenerhebung mit einem EEG-System fällt der Strom aus und der Datensatz der Probandin wird unbrauchbar. Wie würde man die fehlenden Daten charakterisieren?", "antworten": {"A": "Missing Really Completely at Random (MRCAR)", "B": "Missing Completely At Random (MCAR)", "C": "Not Missing At Random (NMAR)", "D": "Missing At Random (MAR)", "E": "Missing At Random But Only Partially (MARBOP)"}, "richtig": "B"}, {"nr": 63, "frage": "Was wurde durch das „Literary Digest Disaster“ eindrucksvoll gezeigt?", "antworten": {"A": "Ergebnisse aus sehr kleinen Stichproben sind meistens falsch, auch wenn die Stichprobe repräsentativ ist", "B": "Ergebnisse aus kleinen Stichproben sind meistens falsch, unabhängig von der Repräsentativität", "C": "Ergebnisse aus großen Stichproben sind meistens richtig, auch wenn die Stichprobe nicht repräsentativ ist", "D": "Ergebnisse aus sehr großen Stichproben können falsch sein, wenn die Stichprobe nicht repräsentativ ist", "E": "Keine dieser Antworten stimmt"}, "richtig": "D"}, {"nr": 64, "frage": "Lisa testet in ihrer Bachelorarbeit die ersten 30 Menschen, die ihr vor dem Haupteingang der MSH begegnen. Um welche Form der Stichprobenziehung handelt es sich dabei?", "antworten": {"A": "Quotenstichprobe", "B": "Theoretische Stichprobe", "C": "Klumpenstichprobe", "D": "Anfallende Stichprobe", "E": "Mehrstufige Zufallsstichprobe"}, "richtig": "D"}, {"nr": 65, "frage": "Die Mitglieder einer großen Partei sollen befragt werden. Dazu werden zuerst per Los 3 der 16 Landesverbände ausgewählt. Innerhalb jedes dieser 3 Landesverbände werden dann wiederum per Los 200 Mitglieder für die Befragung ausgewählt. Um welche Form der Stichprobenziehung handelt es sich dabei?", "antworten": {"A": "Quotenstichprobe", "B": "Theoretische Stichprobe", "C": "Klumpenstichprobe", "D": "Anfallende Stichprobe", "E": "Mehrstufige Zufallsstichprobe"}, "richtig": "E"}, {"nr": 66, "frage": "Was ist die abhängige Variable in einem Experiment?", "antworten": {"A": "Die Variable die unbekannt bleibt", "B": "Die Variable die gemessen wird", "C": "Die Variable die manipuliert wird", "D": "Die Variable die konstant gehalten wird", "E": "Eine Variable die die Interpretierbarkeit der Ergebnisse stört"}, "richtig": "B"}, {"nr": 67, "frage": "Was ist die unabhängige Variable in einem Experiment?", "antworten": {"A": "Die Variable, die unbekannt bleibt", "B": "Die Variable, die gemessen wird", "C": "Die Variable, die manipuliert wird", "D": "Die Variable, die konstant gehalten wird", "E": "Eine Variable, die die Interpretierbarkeit der Ergebnisse stört"}, "richtig": "C"}, {"nr": 68, "frage": "Was ist die Grundidee des psychologischen Experiments?", "antworten": {"A": "Forschende greifen aktiv in das Geschehen ein (durch „Manipulation“ der abhängigen Variablen)", "B": "Forschende greifen aktiv in das Geschehen ein (durch „Manipulation“ der unabhängigen Variablen)", "C": "Forschende greifen aktiv in das Geschehen ein (durch „Manipulation“ von Störvariablen)", "D": "Forschende greifen nicht aktiv in das Geschehen ein, sondern beobachten nur", "E": "Keine der genannten Antworten stimmt"}, "richtig": "B"}, {"nr": 69, "frage": "Welcher dieser Begriffe kennzeichnet einen wichtigen Versuchsplan des psychologischen Experiments?", "antworten": {"A": "Untergruppendesign", "B": "Hauptgruppendesign", "C": "Maximalgruppendesign", "D": "Zwischengruppendesign", "E": "Nebengruppendesign"}, "richtig": "D"}, {"nr": 70, "frage": "Welche Aussage ist zutreffend?", "antworten": {"A": "Bei einem Messwiederholungs-Design ist jede Versuchsperson immer in mehr als einer Gruppe.", "B": "Bei einem Messwiederholungs-Design ist jede Versuchsperson immer in genau einer Gruppe.", "C": "Bei einem Zwischengruppen-Design ist jede Versuchsperson immer in mehr als einer Gruppe.", "D": "Bei einem Hauptgruppen-Design ist jede Versuchsperson immer in mehr als einer Gruppe.", "E": "Bei einem Hauptgruppen-Design ist jede Versuchsperson immer in genau einer Gruppe."}, "richtig": "A"}, {"nr": 71, "frage": "Was ist der zentrale Vorteil von Experimenten mit mehrfaktoriellen Designs?", "antworten": {"A": "Sie erlauben das Testen von Haupteffekten.", "B": "Sie erlauben das Testen von Interaktionen.", "C": "Sie erlauben das Testen von Korrelationen.", "D": "Sie erlauben das Testen von Regressionen.", "E": "Sie erlauben das Testen von Autokorrelationen."}, "richtig": "B"}, {"nr": 72, "frage": "In einer Studie werden depressive Patienten (Gruppe 1) und gesunde Kontrollen (Gruppe 2) vor und nach dem Trier Social Stress Test (TSST) zu Ihrem emotionalen Empfinden befragt. Wie würde man dieses experimentelle Design bezeichnen?", "antworten": {"A": "Zwischensubjektdesign", "B": "Messwiederholungsdesign", "C": "Korrelatives Design", "D": "Gemischtes Design", "E": "Einfaches Design"}, "richtig": "D"}, {"nr": 73, "frage": "Welcher dieser Aussagen ist korrekt?", "antworten": {"A": "Die 3 wichtigsten Formen des Quasi-Experiments sind Designs mit vorgegebenen Gruppen, Zeitreihendesigns, korrelative Studien", "B": "Die 3 wichtigsten Formen des Quasi-Experiments sind Designs mit vorgegebenen Gruppen, korrelative Studien, Einzelfalldesigns", "C": "Die 3 wichtigsten Formen des Quasi-Experiments sind korrelative Studien, Zeitreihendesigns, Einzelfalldesigns", "D": "Die 3 wichtigsten Formen des Quasi-Experiments sind Designs mit vorgegebenen Gruppen, Zeitreihendesigns, Einzelfalldesigns", "E": "Keine dieser Aussagen stimmt."}, "richtig": "D"}, {"nr": 74, "frage": "Welcher dieser Aussagen beschreibt die Korrelationsstudie korrekt?", "antworten": {"A": "ein experimentelles Forschungsdesign in dem die Richtung und Höhe des Zusammenhangs zwischen mindestens zwei Variablen bestimmt wird", "B": "ein nicht-experimentelles Forschungsdesign in dem die Richtung und Höhe des Zusammenhangs zwischen mindestens zwei Variablen bestimmt wird", "C": "ein nicht-experimentelles Forschungsdesign in dem die Richtung aber nicht die Höhe des Zusammenhangs zwischen mindestens zwei Variablen bestimmt wird", "D": "ein nicht-experimentelles Forschungsdesign in dem die Höhe, aber nicht die Richtung des Zusammenhangs zwischen mindestens zwei Variablen bestimmt wird", "E": "ein nicht-experimentelles Forschungsdesign in dem die weder die Richtung noch die Höhe des Zusammenhangs zwischen mindestens zwei Variablen bestimmt wird"}, "richtig": "B"}, {"nr": 75, "frage": "Wie hoch ist typischerweise eine Autokorrelation?", "antworten": {"A": "-1", "B": "-0,5", "C": "0", "D": "0,5", "E": "1"}, "richtig": "E"}, {"nr": 76, "frage": "Wann wird eine Einflussgröße zu einer Störvariablen in einem psychologischen Experiment?", "antworten": {"A": "Wenn sie systematisch mit den Stufen einer AV variiert und auf die UV einwirkt", "B": "Wenn sie nicht systematisch mit den Stufen einer AV variiert, aber auf die UV einwirkt", "C": "Wenn sie systematisch mit den Stufen einer AV variiert, aber nicht auf die UV einwirkt", "D": "Wenn sie systematisch mit den Stufen einer UV variiert und auf die AV einwirkt", "E": "Wenn sie systematisch mit den Stufen einer UV variiert aber nicht auf die AV einwirkt"}, "richtig": "D"}, {"nr": 77, "frage": "Beurteilen Sie folgende Situation: Zwei Gruppen von Versuchspersonen sollen bzgl. der Auswirkung des Alters auf ihre Hörfähigkeit getestet werden. Gruppe 1 besteht auf Menschen zwischen 20 und 30 Jahren und Gruppe 2 aus Menschen zwischen 80 und 90 Jahren. Gruppe 1 wird in einem ruhigen Raum getestet, Gruppe 2 neben einer lauten Baustelle. Welche Art von Störvariable liegt hier vor?", "antworten": {"A": "Es liegt keine Störvariable vor", "B": "Versuchspersonenmerkmale", "C": "Versuchsleiter*innenmerkmale", "D": "Situationsmerkmale", "E": "Unabhängige Merkmale"}, "richtig": "D"}, {"nr": 78, "frage": "Wie heißen die 7 üblichen Kontrolltechniken für Störvariablen?", "antworten": {"A": "Konstanthaltung, Elimination, systematische Variation, zufällige Variation, Randomisieren, Korrelieren, Blindversuche", "B": "Konstanthaltung, Elimination, systematische Variation, zufällige Variation, Randomisieren, Korrelieren, Messwiederholung", "C": "Konstanthaltung, Elimination, systematische Variation, zufällige Variation, Randomisieren, Parallelisieren, Blindversuche", "D": "Konstanthaltung, Elimination, systematische Variation, zufällige Variation, Randomisieren, Parallelisieren, Messwiederholung", "E": "Konstanthaltung, Elimination, systematische Varianz, zufällige Varianz, Randomisieren, Parallelisieren, Messwiederholung"}, "richtig": "C"}, {"nr": 79, "frage": "Was ist die zentrale Voraussetzung damit Randomisieren eine effiziente Technik zur Kontrolle von Störvariablen ist?", "antworten": {"A": "Die Stichprobe muss vorher parallelisiert werden", "B": "Die Stichprobe muss klein sein", "C": "Die Stichprobe muss groß sein", "D": "Die Stichprobe muss normalverteilt sein", "E": "Die Stichprobe muss binomialverteilt sein"}, "richtig": "C"}, {"nr": 80, "frage": "Beurteilen Sie folgende Situation: John nimmt an einer Studie zu Hörvermögen und Intelligenz teil. Die Studie hat 2 Testzeitpunkte. Beim ersten Testzeitpunkt ist John fit und konzentriert. Kurz vor dem zweiten Testzeitpunkt streitet John sich schwer mit seiner besten Freundin Karin. Er kann sich daher beim zweiten Testzeitpunkt kaum konzentrieren. Welche Form von Sequenzeffekten ist in dieser Situation aufgetreten?", "antworten": {"A": "Positionseffekte", "B": "Übertragungseffekte", "C": "Rückübertragungseffekte", "D": "Zwischenzeitliches Geschehen", "E": "Serielles Geschehen"}, "richtig": "D"}, {"nr": 81, "frage": "Welches Testgütekriterium ist die prinzipielle Voraussetzung dafür, dass alle anderen Testgütekriterien erfüllt werden können?", "antworten": {"A": "Objektivität", "B": "Reliabilität", "C": "Validität", "D": "Spezifität", "E": "Sensibilität"}, "richtig": "A"}, {"nr": 82, "frage": "Was sind die 3 wichtigsten Formen des Testgütekriteriums Objektivität?", "antworten": {"A": "Inter-Rater Objektivität, Split-Half Objektivität, Paralleltest Objektivität", "B": "Diskriminante Objektivität, konvergente Objektivität, Kriteriums-Objektivität", "C": "Ökologische Objektivität, internale Objektivität, externale Objektivität", "D": "Interne Konsistenz, Korrelation, inhaltliche Objektivität", "E": "Durchführungsobjektivität, Auswertungsobjektivität, Interpretationsobjektivität"}, "richtig": "E"}, {"nr": 83, "frage": "Bewerten Sie die folgende Situation: Ben entwirft einen Intelligenztest und testet 100 Probanden am Montag. Alle 100 sind laut Test hochintelligent. Dann testet Ben dieselben Probanden mit demselben Test am Freitag. Jetzt sind 30 laut Test hochintelligent und 70 nicht sehr intelligent. Welche Aussage trifft zu?", "antworten": {"A": "Die Test-Retest-Reliabilität ist gering", "B": "Die Interrater-Reliabilität ist gering", "C": "Die Paralleltest Reliabilität ist gering", "D": "Die Split-Half Reliabilität ist gering", "E": "Die interne Konsistenz ist gering"}, "richtig": "A"}, {"nr": 84, "frage": "Bewerten Sie die folgende Situation: Lena führt einen Persönlichkeitstest mit 200 Fragen durch. Sie zerlegt den Test in Fragen mit einer graden Nummer und Fragen mit einer ungraden Nummer und korreliert diese miteinander. Welche Form der Reliabilität hat Lena berechnet?", "antworten": {"A": "Die Test-Retest-Reliabilität", "B": "Die Interrater-Reliabilität", "C": "Die Paralleltest Reliabilität", "D": "Die Split-Half Reliabilität", "E": "Die interne Konsistenz"}, "richtig": "D"}, {"nr": 85, "frage": "Bewerten Sie die folgende Situation: Jan entwirft einen Intelligenztest mit 100 Fragen. Der Test hat 2 Skalen (verbale Intelligenz & non-verbale Intelligenz). Der durchschnittliche Korrelationskoeffizient zwischen den Antworten auf die Fragen der Skala „Verbale Intelligenz“ ist 0,09. Welche Aussage trifft zu?", "antworten": {"A": "Die Test-Retest-Reliabilität ist gering", "B": "Die Interrater-Reliabilität ist gering", "C": "Die Paralleltest Reliabilität ist gering", "D": "Die Split-Half Reliabilität ist gering", "E": "Die interne Konsistenz ist gering"}, "richtig": "E"}, {"nr": 86, "frage": "Wie erreicht man eine hohe interne Validität?", "antworten": {"A": "Durch ein Experiment, das möglichst nah am echten Leben ist", "B": "Durch eine möglichst gute Kontrolle der Störvariablen", "C": "Durch ein Experiment, das die Probanden einfach verstehen", "D": "Durch einen großen Unterschied zu Tests, die ein anderes Konstrukt messen", "E": "Durch einen geringen Unterschied zu Tests, die dasselbe Konstrukt messen"}, "richtig": "B"}, {"nr": 87, "frage": "Populationsvalidität, Situationsvalidität und Variablenvalidität sind Unterarten einer Form von Validität. Welche ist das?", "antworten": {"A": "Interne Validität", "B": "Externe Validität", "C": "Statistische Validität", "D": "Augenscheinvalididät", "E": "Konstruktvalidität"}, "richtig": "B"}, {"nr": 88, "frage": "Eine Wissenschaftlerin wertet ihre Daten aus. Obwohl keine Normalverteilung gegeben ist, testet Sie mit einer Varianzanalyse. Die Verteilungsvoraussetzungen des Testverfahrens sind also verletzt. Welche Art der Validität verringert sich durch dieses Vorgehen?", "antworten": {"A": "Interne Validität", "B": "Externe Validität", "C": "Statistische Validität", "D": "Augenscheinvalididät", "E": "Konstruktvalidität"}, "richtig": "C"}, {"nr": 89, "frage": "Der Gesamtpunktwert in einem Intelligenztest zeigt eine sehr niedrige Korrelation (r=0,002) mit dem Gesamtpunktwert in einem Fragebogen zur Einsamkeit. Welche Art von Validität ist daher für diesen Intelligenztest als hoch anzusehen?", "antworten": {"A": "Interne Validität", "B": "Externe Validität", "C": "Statistische Validität", "D": "Konvergente Validität", "E": "Diskriminante Validität"}, "richtig": "E"}, {"nr": 90, "frage": "In einer Stichprobe von 100 Personen leiden 50 an Depressionen, 50 tun dies nicht. Ein neuer Fragebogen zu Depressionen wird in dieser Gruppe eingesetzt. Das Testergebnis ist bei 95 Menschen negativ („keine Depression“) und bei 5 positiv („Depression“). Alle 5 Menschen mit einem positiven Testergebnis leiden auch an Depressionen. Von den 95 Menschen mit einem negativen Testergebnis leiden 45 an Depressionen, 50 tun es nicht. Welche Aussage ist korrekt?", "antworten": {"A": "Die Sensitivität beträgt 0%", "B": "Die Sensitivität beträgt 0,1%", "C": "Die Sensitivität beträgt 1%", "D": "Die Sensitivität beträgt 10%", "E": "Die Sensitivität beträgt 100%"}, "richtig": "D"}, {"nr": 91, "frage": "Welcher Form der Ethik in der Psychologie lässt sich die Aussage „Untersuchungsteilnehmende sollen in ihrer Würde und ihrem Wohlergehen geschützt werden.“ am ehesten zuordnen?", "antworten": {"A": "Teilnehmerethik", "B": "Datenerhebungsethik", "C": "Untersuchungsethik", "D": "Forschungsethik", "E": "Wissenschaftsethik"}, "richtig": "D"}, {"nr": 92, "frage": "Welcher Form der Ethik in der Psychologie lässt sich die Aussage „Wissenschaftlicher Erkenntnisgewinn soll den Regeln guter wissenschaftlicher Praxis folgen und überprüfbar sein.“ am ehesten zuordnen?", "antworten": {"A": "Teilnehmerethik", "B": "Datenerhebungsethik", "C": "Untersuchungsethik", "D": "Forschungsethik", "E": "Wissenschaftsethik"}, "richtig": "E"}, {"nr": 93, "frage": "Was ist die Deklaration von Helsinki?", "antworten": {"A": "Die methodischen Grundsätze für psychophysische Forschung", "B": "Die theoretischen Grundsätze der Testgütekriterien Validität und Reliabilität", "C": "Die ethischen Grundsätze für die medizinische Forschung am Menschen", "D": "Die physikalischen Grundsätze der funktionellen Magnetresonanztomographie", "E": "Die philosophischen Grundsätze der Bewusstseinsforschung"}, "richtig": "C"}, {"nr": 94, "frage": "Was wollte Milgram mit seiner berühmten nach ihm benannten Studie erforschen?", "antworten": {"A": "Was passiert, wenn Menschen in Gefängnissen Macht über andere Menschen haben", "B": "Wie stark das Auftreten eines Redners seine wahrgenommene Kompetenz beeinflusst, auch wenn er inhaltlichen Unsinn redet", "C": "Wie weit der Gehorsam von Menschen gegenüber Autoritätspersonen reicht", "D": "Wie stark das Geschlecht die Persönlichkeit beeinflusst", "E": "Wie sehr die Beleuchtung am Arbeitsplatz die Arbeitsleistung beeinflusst"}, "richtig": "C"}, {"nr": 95, "frage": "Welcher der folgenden 5 Punkte zählt NICHT zu den 8 ethischen Prinzipien bei psychologischen Experimenten?", "antworten": {"A": "Gewährleistung der psychischen & physischen Unversehrtheit", "B": "Unterschreiben einer Einverständniserklärung", "C": "Transparenz der Untersuchung", "D": "Einhalten der statistischen Verteilungsvoraussetzungen", "E": "Genehmigung durch eine Ethik-Kommission"}, "richtig": "D"}, {"nr": 96, "frage": "Ein Antrag an die Ethik-Kommission soll gestellt werden. Welche 3 Dokumente sind besonders relevant?", "antworten": {"A": "Ethikantrag, Statistikinformation, Einverständniserklärung", "B": "Ethikantrag, Statistikinformation, Versuchszielerklärung", "C": "Ethikantrag, Probandeninformation, Versuchszielerklärung", "D": "Ethikantrag, Probandeninformation, Einverständniserklärung", "E": "Ethikantrag, Datenschutzinformation, Auswertungserklärung"}, "richtig": "D"}, {"nr": 97, "frage": "Ein Übersichtsartikel zum Thema Stress wird veröffentlicht. Es handelt sich um eine Übersicht über publizierte Literatur, ohne neue Datenerhebung. Was ist hier aus ethischer Sicht besonders relevant?", "antworten": {"A": "Forschungsethik", "B": "Datenethik", "C": "Wissenschaftsethik", "D": "Statistikethik", "E": "Stichprobenethik"}, "richtig": "C"}, {"nr": 98, "frage": "Es gibt 5 Regeln guter wissenschaftlicher Praxis. Welcher davon ist das Peer-Review Verfahren zuzuordnen?", "antworten": {"A": "Arbeiten nach den Regeln der Wissenschaft", "B": "Kritische Reflexion aller Ergebnisse", "C": "Sicherung von Primärdaten", "D": "Korrekte Zitationen und Autorenschaft", "E": "Keine Sabotage von Forschungstätigkeiten"}, "richtig": "B"}, {"nr": 99, "frage": "Wie lange müssen Primärdaten wissenschaftlicher Studien in Deutschland mindestens gespeichert werden?", "antworten": {"A": "1 Jahr", "B": "5 Jahre", "C": "10 Jahre", "D": "15 Jahre", "E": "20 Jahre"}, "richtig": "C"}, {"nr": 100, "frage": "Wofür ist der ehemalige Sozialpsychologie-Professor Stapel bekannt?", "antworten": {"A": "Schwere Verstöße gegen den Datenschutz", "B": "Unethische Experimente zum Thema Geschlecht", "C": "Sabotage des Labors einer Kollegin", "D": "Datenfälschung in großem Umfang", "E": "Elektroschockexperimente, die die Probanden schwer belastet haben"}, "richtig": "D"}, {"nr": 101, "frage": "Welche dieser Aussagen zu qualitativen Forschungsmethoden ist korrekt?", "antworten": {"A": "Es werden standardisierte Verfahren eingesetzt", "B": "Es werden Hypothesen getestet", "C": "Psychologische Zustände werden in Zahlenwerte übertragen", "D": "Sie sind explorativ", "E": "Sie sind der dominante Ansatz in der wissenschaftlichen Psychologie"}, "richtig": "D"}, {"nr": 102, "frage": "Was wurde in der sogenannten Marienthal-Studie erforscht?", "antworten": {"A": "Das Erleben von Gemeinschaftsgefühl", "B": "Das Erleben von Arbeitslosigkeit", "C": "Das Erleben von Zuneigung", "D": "Das Erleben von Religion", "E": "Das Erleben von Bedrohung"}, "richtig": "B"}, {"nr": 103, "frage": "Welche der folgenden psychologischen Forschungsmethoden kann den qualitativen Forschungsmethoden zugeordnet werden?", "antworten": {"A": "Das EEG", "B": "Das Stroop-Paradigma", "C": "Das Leitfadeninterview", "D": "Die Erfassung von Stresshormonen", "E": "Die Erfassung molekulargenetischer Daten"}, "richtig": "C"}, {"nr": 104, "frage": "Wie unterscheidet sich ein Interview als psychologische Forschungsmethode von einem Alltagsgespräch?", "antworten": {"A": "Durch asymmetrische Gesprächsführung", "B": "Durch symmetrische Gesprächsführung", "C": "Durch ambivalente Gesprächsführung", "D": "Durch synergistische Gesprächsführung", "E": "Durch syntaktische Gesprächsführung"}, "richtig": "A"}, {"nr": 105, "frage": "Zu welcher Form der qualitativen Datenerhebung zählt das Rollenspiel?", "antworten": {"A": "Beobachtung", "B": "Nonreaktive Verfahren", "C": "Eigenproduktion", "D": "Lautes Denken", "E": "Nutzung vorhandener Daten"}, "richtig": "C"}, {"nr": 106, "frage": "Welcher Kategorie kann die Technik des „lauten Denkens“ zugeordnet werden?", "antworten": {"A": "Verbale quantitative Forschungsmethoden", "B": "Nonverbale quantitative Forschungsmethoden", "C": "Visuelle quantitative Forschungsmethoden", "D": "Verbale qualitative Forschungsmethoden", "E": "Visuelle qualitative Forschungsmethoden"}, "richtig": "D"}, {"nr": 107, "frage": "Welches wissenschaftliche Vorgehen ist in der qualitativen Forschung hauptsächlich zu finden?", "antworten": {"A": "Induktives Vorgehen", "B": "Deduktives Vergehen", "C": "Reaktives Vorgehen", "D": "Randomisiertes Vorgehen", "E": "Neuronales Vorgehen"}, "richtig": "A"}, {"nr": 108, "frage": "Schätzen Sie die folgende Situation ein. In einem qualitativen Forschungsprojekt sollen die Lebensgeschichten traumatisierter Kriegsüberlebender erforscht werden. Welche Methoden bietet sich am ehesten an?", "antworten": {"A": "Lautes Denken", "B": "Beobachtung", "C": "Gruppendiskussion", "D": "Offene schriftliche Befragung", "E": "Halbstandardisiertes Interview"}, "richtig": "D"}, {"nr": 109, "frage": "Welcher dieser Begriffe bezeichnet eine qualitative Forschungsmethode?", "antworten": {"A": "Nonreaktive Verfahren", "B": "Nonaktionale Verfahren", "C": "Nonverbale Verfahren", "D": "Nonauditorische Verfahren", "E": "Nonvisuelle Verfahren"}, "richtig": "A"}, {"nr": 110, "frage": "In welchem Bereich der Forschung spielen nonreaktive Beobachtungsverfahren eine besonders wichtige Rolle?", "antworten": {"A": "Kommunikationsforschung", "B": "Medikamentenforschung", "C": "Klimaforschung", "D": "Verkehrsforschung", "E": "Museumsforschung"}, "richtig": "E"}, {"nr": 111, "frage": "Wozu dient die Transkription in der qualitativen Forschung?", "antworten": {"A": "Der Interpretation von Beobachtungsdaten", "B": "Der Verschriftlichung auditiver Daten", "C": "Der Bildung von Themenkomplexen aus aufbereiteten Texten", "D": "Der Codierung von Äußerungen in einem Rollenspiel", "E": "Der thematischen Analyse von Daten die mit der Technik „Lautes Denken“ gewonnen wurden"}, "richtig": "B"}, {"nr": 112, "frage": "Welches Testgütekriterium ist in der qualitativen Forschung von zentraler Bedeutung?", "antworten": {"A": "Objektivität", "B": "Reliabilität", "C": "Vaidität", "D": "Sensitivität", "E": "Spezifität"}, "richtig": "C"}, {"nr": 113, "frage": "Welche Form der Validität ist in der qualitativen Forschung oft besser als in der quantitativen Forschung?", "antworten": {"A": "die interne Validität", "B": "die Populationsvalidität", "C": "die Situationsvalidität", "D": "die Variablenvalidität", "E": "die Stichprobenvalidität"}, "richtig": "C"}, {"nr": 114, "frage": "Welche ethischen Probleme tauchen spezifisch bei qualitativer Forschung auf, sind aber kein Problem in der quantitativen Forschung?", "antworten": {"A": "Ethische Probleme durch Täuschung", "B": "Ethische Probleme durch Intransparenz", "C": "Ethische Probleme durch Gefährdung der physischen Unversehrtheit", "D": "Ethische Probleme durch Gefährdung der psychischen Unversehrtheit", "E": "Ethische Probleme durch Selbstidentifikation"}, "richtig": "E"}, {"nr": 115, "frage": "Welche qualitative Forschungsmethode ist mit den meisten ethischen Problemen verbunden?", "antworten": {"A": "Leitfadeninterview", "B": "Narratives Interview", "C": "Lautes Denken", "D": "Offene Beobachtung", "E": "Verdeckte Beobachtung"}, "richtig": "E"}, {"nr": 116, "frage": "Was ist wahrscheinlich die Hauptursache der Replikationskrise in der psychologischen Forschung?", "antworten": {"A": "Absichtliche Datenfälschungen", "B": "Absichtliches Übertreiben von Ergebnissen", "C": "Unabsichtliche Fehler bei der Auswertung", "D": "Unabsichtliche Fehler bei der Datenerhebung", "E": "Questionable Research Practices"}, "richtig": "E"}, {"nr": 117, "frage": "Wieviel Prozent der psychologischen Studien können laut einer bekannten Studie der Open Science Collaboration aus dem Jahr 2015 repliziert werden?", "antworten": {"A": "19%", "B": "39%", "C": "59%", "D": "79%", "E": "99%"}, "richtig": "B"}, {"nr": 118, "frage": "Eine Wissenschaftlerin testet 200 Probanden (100 Männer und 100 Frauen) in Bezug auf Ihre Einstellungen zu Alkoholkonsum. Sie entscheidet sich, aus der Studie 2 Publikationen zu machen, eine nur mit männlichen Probanden und eine nur mit weiblichen Probanden. Welches problematische Verhalten tritt hier auf?", "antworten": {"A": "HARKing", "B": "p-hacking", "C": "Salamitaktik", "D": "Publikationsbias", "E": "File-Drawing"}, "richtig": "C"}, {"nr": 119, "frage": "Was bezeichnet eine häufige QRP?", "antworten": {"A": "PARKing", "B": "SHARKing", "C": "HARKing", "D": "BARKing", "E": "DARKing"}, "richtig": "C"}, {"nr": 120, "frage": "Auf welchen 3 Ebenen befinden sich die zentralen Probleme, welche die Replikationskrise in der psychologischen Forschung verursachen?", "antworten": {"A": "Verlage, Autor*innen, Leser*innen", "B": "System, Statistik, Individuum", "C": "Datenerhebung, Datenauswertung, Dateninterpretation", "D": "Autor*innen, Gutachter*innen, Editor*innen", "E": "Gesellschaft, Politik, Wissenschaft"}, "richtig": "B"}, {"nr": 121, "frage": "Welcher dieser Begriffe kennzeichnet einen wichtigen methodischen Ansatz in der Open Science Bewegung?", "antworten": {"A": "Prähypothese", "B": "Präbegutachtung", "C": "Präinterpretation", "D": "Präanalyse", "E": "Präregistrierung"}, "richtig": "E"}, {"nr": 122, "frage": "Welche Auswirkung hat Präregistrierung typischer Weise auf die Ergebnisse von Studien?", "antworten": {"A": "Keinen – Es werden gleich viele signifikante Effekte wie ohne Präregistrierung beobachtet", "B": "Es werden etwas weniger signifikante Effekte als ohne Präregistrierung beobachtet (unter 10% Unterschied)", "C": "Es werden deutlich weniger signifikante Effekte als ohne Präregistrierung beobachtet (über 10% Unterschied)", "D": "Es werden etwas mehr signifikante Effekte als ohne Präregistrierung beobachtet (unter 10% Unterschied)", "E": "Es werden deutlich mehr signifikante Effekte als ohne Präregistrierung beobachtet (über 10% Unterschied)"}, "richtig": "C"}, {"nr": 123, "frage": "Was ist der zentrale Ansatz zur Bekämpfung der Replikationskrise in der psychologischen Forschung?", "antworten": {"A": "Open Science", "B": "Open Coding", "C": "Open Analysis", "D": "Open Publishing", "E": "Open Writing"}, "richtig": "A"}, {"nr": 124, "frage": "Was ist der wichtigste Aspekt der Open Science Bewegung spezifisch in Bezug auf die Bekämpfung der Replikationskrise?", "antworten": {"A": "Zugang zu wissenschaftlichen Artikeln für alle Menschen", "B": "Zugang zu wissenschaftlicher Software für alle Menschen", "C": "Bereitstellen wissenschaftlicher Daten für alle Menschen", "D": "Transparenz des Forschungsprozesses für alle Menschen", "E": "Gerechtere Begutachtungsprozesse für alle Menschen"}, "richtig": "D"}, {"nr": 125, "frage": "Was ist ein Registered Report?", "antworten": {"A": "Eine besondere Art von wissenschaftlichen Artikeln mit einem zweistufigen Begutachtungsprozess", "B": "Eine besondere Art von wissenschaftlichem Gutachten für einen Artikel im Peer- Review-Verfahren", "C": "Eine besondere Art der Dokumentation der statistischen Analysen die in einem wissenschaftlichen Artikel durchgeführt wurden", "D": "Eine besondere Art der Aufbereitung von Daten zur Speicherung im Open Science Framework (OSF)", "E": "Eine besondere Art von Bericht über QRPs bei Artikeln"}, "richtig": "A"}, {"nr": 126, "frage": "Welche Aussage trifft in Bezug auf die Hauptursachen für verlorene Lebensjahre durch Tod oder Behinderung (DALY) zu?", "antworten": {"A": "Psychische Störungen spielen kaum eine Rolle", "B": "Psychische Störungen sind die Nr. 1 Hauptursache für verlorene Lebensjahre durch Tod oder Behinderung über alle Altersgruppen", "C": "Psychische Störungen sind die Nr. 1 Hauptursache für verlorene Lebensjahre durch Tod oder Behinderung für die Altersgruppe 0-14 Jahre", "D": "Psychische Störungen sind die Nr. 1 Hauptursache für verlorene Lebensjahre durch Tod oder Behinderung für die Altersgruppe 15-49 Jahre", "E": "Psychische Störungen sind die Nr. 1 Hauptursache für verlorene Lebensjahre durch Tod oder Behinderung für die Altersgruppe 50-99 Jahre"}, "richtig": "D"}, {"nr": 127, "frage": "Wer begründete die Epidemiologie?", "antworten": {"A": "Robert Koch", "B": "Hippokrates", "C": "John Snow", "D": "Rudolf Virchow", "E": "Carl Gustav Carus"}, "richtig": "C"}, {"nr": 128, "frage": "Was beinhaltet die epidemiologische Trias?", "antworten": {"A": "Schädlicher Agens, Wirt, Umwelt", "B": "Prävalenz, Inzidenz, Komorbidität", "C": "Längsschnitt, Querschnitt, Intervention", "D": "Odds Ratio, Risk Ratio, Risikodifferenz", "E": "Korrelat, Risikofaktor, fester Faktor"}, "richtig": "A"}, {"nr": 129, "frage": "Was bezeichnet die Prävalenz?", "antworten": {"A": "Die Häufigkeit einer Erkrankung beim Vorliegen eines bestimmten Risikofaktors", "B": "Den Rückgang der Häufigkeit einer Erkrankung nach einer bestimmten Intervention", "C": "Die Häufigkeit einer Neuerkrankung in einem bestimmten Zeitraum", "D": "Die Häufigkeit einer Erkrankung", "E": "Die Häufigkeit des gemeinsamen Auftretens von zwei Erkrankungen"}, "richtig": "D"}, {"nr": 130, "frage": "Was bezeichnet die Inzidenz?", "antworten": {"A": "Die Häufigkeit einer Erkrankung beim Vorliegen eines bestimmten Risikofaktors", "B": "Den Rückgang der Häufigkeit einer Erkrankung nach einer bestimmten Intervention", "C": "Die Häufigkeit einer Neuerkrankung in einem bestimmten Zeitraum", "D": "Die Häufigkeit einer Erkrankung", "E": "Die Häufigkeit des gemeinsamen Auftretens von zwei Erkrankungen"}, "richtig": "C"}, {"nr": 131, "frage": "Nehmen Sie an, dass Frauen ein Risiko von 21,4% haben an einer Angststörung zu erkranken. Männer haben ein Risiko von 9,3%. Wie hoch ist die Risk Ratio (Frauen / Männer)?", "antworten": {"A": "0,2", "B": "2,3", "C": "2,7", "D": "12,1", "E": "12,3"}, "richtig": "B"}, {"nr": 132, "frage": "Nehmen Sie an, dass Frauen ein Risiko von 21,4% haben an einer Angststörung zu erkranken. Männer haben ein Risiko von 9,3%. Wie hoch ist die Odds Ratio (Frauen / Männer)?", "antworten": {"A": "0,2", "B": "2,3", "C": "2,7", "D": "12,1", "E": "12,3"}, "richtig": "C"}, {"nr": 133, "frage": "Wie viele Menschen in der EU sind innerhalb von 12 Monaten durchschnittlich von einer psychischen Störung betroffen?", "antworten": {"A": "1 Millionen", "B": "16 Millionen", "C": "65 Millionen", "D": "165 Millionen", "E": "651 Millionen"}, "richtig": "D"}, {"nr": 134, "frage": "Welche der folgenden Erkrankungen hat die höchste 12-Monats-Prävalenz?", "antworten": {"A": "Unipolare Depression", "B": "Angststörungen", "C": "Zwangsstörung", "D": "Essstörung", "E": "Somatoforme Störungen"}, "richtig": "B"}, {"nr": 135, "frage": "Welche der folgenden Erkrankungen hat die niedrigste 12-Monats-Prävalenz?", "antworten": {"A": "Unipolare Depression", "B": "Angststörungen", "C": "Zwangsstörung", "D": "Essstörung", "E": "Somatoforme Störungen"}, "richtig": "C"}, {"nr": 136, "frage": "Welche der folgenden Störungen tritt häufiger bei Männern als bei Frauen auf?", "antworten": {"A": "Angststörungen", "B": "Unipolare Depression", "C": "Anorexia Nervosa", "D": "Alkoholabhängigkeit", "E": "PTBS"}, "richtig": "D"}, {"nr": 137, "frage": "Was ist das häufigste Ersterkrankungsalter über alle psychischen Erkrankungen hinweg?", "antworten": {"A": "14,5 Jahre", "B": "16,5 Jahre", "C": "18,5 Jahre", "D": "20,5 Jahre", "E": "22,5 Jahre"}, "richtig": "A"}, {"nr": 138, "frage": "Was sind die geschätzten jährlichen Kosten die durch psychische Störungen in der EU entstehen?", "antworten": {"A": "461 Milliarden Euro", "B": "589 Milliarden Euro", "C": "612 Milliarden Euro", "D": "795 Milliarden Euro", "E": "853 Milliarden Euro"}, "richtig": "A"}, {"nr": 139, "frage": "Was ist der Hauptgrund dafür, dass psychische Erkrankungen gesamtgesellschaftlich so teuer sind?", "antworten": {"A": "Die pro Person hohen direkten Krankheitskosten durch die hohen Psychopharmaka- Preise", "B": "Die pro Person hohen direkten Krankheitskosten durch die Vielzahl langfristiger Aufenthalte", "C": "Die pro Person hohen indirekten Krankheitskosten durch Arbeitsausfall und reduzierte Arbeitskraft", "D": "Die insgesamt hohen direkten Kosten, weil so viele Menschen an psychischen Erkrankungen leiden", "E": "Die insgesamt hohen indirekten Kosten, weil so viele Menschen an psychischen Erkrankungen leiden"}, "richtig": "E"}, {"nr": 140, "frage": "Wie hoch ist bei Erwachsenen der Prozentsatz der Menschen mit psychischen Erkrankungen, die eine Behandlung aufsuchen?", "antworten": {"A": "23%", "B": "43%", "C": "53%", "D": "63%", "E": "83%"}, "richtig": "B"}, {"nr": 141, "frage": "Welche der folgenden Aussagen ist korrekt?", "antworten": {"A": "Etwa 81% der TikTok Videos zu ADHS enthalten nützliche und korrekte Informationen zur Diagnose", "B": "Etwa 61% der TikTok Videos zu ADHS enthalten nützliche und korrekte Informationen zur Diagnose", "C": "Etwa 41% der TikTok Videos zu ADHS enthalten nützliche und korrekte Informationen zur Diagnose", "D": "Etwa 21% der TikTok Videos zu ADHS enthalten nützliche und korrekte Informationen zur Diagnose", "E": "Etwa 1% der TikTok Videos zu ADHS enthalten nützliche und korrekte Informationen zur Diagnose"}, "richtig": "D"}, {"nr": 142, "frage": "Betrachten Sie die folgende Aussage: \"Prof. Sir Karl Raimund Popper (1902 1994) erschuf mit dem [...] eine wichtige wissenschaftstheoretische Grundlage für das Testen von Hypothesen.\" Welcher Term ist richtig für [...]?", "antworten": {"A": "kritischen Rationalismus", "B": "praktischen Empirismus", "C": "spekulativen Pragmatismus", "D": "hypothetischen Realismus", "E": "postmodernen Induktivismus"}, "richtig": "A"}, {"nr": 143, "frage": "Das wichtigstes Prinzip der Hypothesenbildung ist das Sparsamkeitsprinzip, welches von Wilhelm von Ockham (1288-1347) begründet wurde. Wie wird es auch genannt?", "antworten": {"A": "Ockhams Richtschwert", "B": "Ockhams Silberdolch", "C": "Ockhams Doppelaxt", "D": "Ockhams Fallbeil", "E": "Ockhams Rasiermesser"}, "richtig": "E"}, {"nr": 144, "frage": "Welches wichtige Prinzip für das Testen von Theorien wurde von Popper populär gemacht?", "antworten": {"A": "Das Induktionsprinzip", "B": "Das Deduktionsprinzip", "C": "Das Empirieprinzip", "D": "Das Verifikationsprinzip", "E": "Das Falsifikationsprinzip"}, "richtig": "E"}, {"frage": "Beurteilen Sie die folgende Situation: Anna und Finn haben eine schwere Beziehungskrise. Finn wirft Anna vor, zu viel zu arbeiten und nie Zeit für ihn zu haben. Sie begeben sich in Paartherapie. Die Therapeutin schlägt vor, Folgendes zu tun: Für eine halbe Stunde muss Finn sich vorstellen, er wäre Anna, und Anna muss sich vorstellen, sie wäre Finn. Nun müssen sie ihre Probleme aus der Perspektive der jeweils anderen Person diskutieren. Welcher qualitativen Methode würde man das Vorgehen der Therapeutin zuordnen?", "antworten": {"A": "Reaktive Verfahren", "B": "Non-reaktive Verfahren", "C": "Lautes Denken", "D": "Eigenproduktion", "E": "Systemische Perspektivübernahme"}, "richtig": "D", "nr": 145}, {"frage": "Was sind die zwei wichtigsten Formen der Ethik in der Psychologie?", "antworten": {"A": "Forschungsethik & Wissenschaftsethik", "B": "Forschungsethik & Versuchspersonenethik", "C": "Wissenschaftsethik & Versuchspersonenethik", "D": "Versuchspersonenethik & Situationsethik", "E": "Situationsethik & Forschungsethik"}, "richtig": "A", "nr": 146}, {"frage": "In einer Stichprobe von 100 Personen leiden 50 an PTSD, 50 tun dies nicht. Ein neuer Fragebogen zu PTSD wird in dieser Gruppe eingesetzt. Das Testergebnis ist bei 95 Menschen negativ („keine PTSD“) und bei 5 positiv („PTSD“). Alle 5 Menschen mit einem positiven Testergebnis leiden auch an PTSD. Von den 95 Menschen mit einem negativen Testergebnis leiden 45 an PTSD, 50 tun es nicht. Welche Aussage ist korrekt?", "antworten": {"A": "Die Spezifität beträgt 0%", "B": "Die Spezifität beträgt 0,1%", "C": "Die Spezifität beträgt 1%", "D": "Die Spezifität beträgt 10%", "E": "Die Spezifität beträgt 100%"}, "richtig": "E", "nr": 147}, {"frage": "Was ist wahrscheinlich die Hauptursache der Replikationskrise in der psychologischen Forschung?", "antworten": {"A": "XRPs", "B": "YRPs", "C": "ZRPs", "D": "WRPs", "E": "QRPs"}, "richtig": "E", "nr": 148}, {"frage": "Was war die häufigste Grundhaltung der Menschen, die in der Marienthal-Studie untersucht wurden?", "antworten": {"A": "Ungebrochene Grundhaltung", "B": "Resignierte Grundhaltung", "C": "Verzweifelte Grundhaltung", "D": "Apathische Grundhaltung"}, "richtig": "B", "nr": 149}, {"frage": "Beurteilen Sie die folgende Situation: Kim und Gina studieren zusammen und sind gute Freundinnen. Jahre später sind beide Professorinnen an verschiedenen Universitäten. Kim führt eine Studie zu Yoga und Depressionen durch und schickt das Manuskript zu einer angesehenen Fachzeitschrift. Die Editorin fragt Gina, ob sie das Manuskript von Kim begutachten kann, und Gina willigt ein. Abends liest Gina das Manuskript und schreibt ihr Gutachten dazu. Es fällt positiv aus und sie empfiehlt, das Manuskript ohne Änderungen sofort anzunehmen. Welcher Aspekt der Open Science Bewegung könnte diese Art des wissenschaftlichen Fehlverhaltens verhindern?", "antworten": {"A": "Open Data", "B": "Open Code", "C": "Open Access Journals", "D": "Open Source Software", "E": "Open Peer Review"}, "richtig": "E", "nr": 150}, {"frage": "Wieviel Prozent der Patient*innen mit psychischen Störungen haben 4 oder mehr Diagnosen?", "antworten": {"A": "3%", "B": "13%", "C": "23%", "D": "33%", "E": "43%"}, "richtig": "B", "nr": 151}, {"frage": "Welches dieser Phänomene stellt ein ethisches Problem in der qualitativen Forschung dar, tritt in der quantitativen Forschung aber kaum auf?", "antworten": {"A": "Das Problem des Doppelcharakters von Handlungen im Feld", "B": "Das Problem der Täuschung von Probanden", "C": "Das Problem der Freiwilligkeit der Versuchsteilnahme", "D": "Das Problem der Gewährleistung der psychischen Unversehrtheit", "E": "Das Problem der Gewährleistung der physischen Unversehrtheit"}, "richtig": "A", "nr": 152}, {"frage": "Welche Störungsgruppe stellt über alle Menschen hinweg den höchsten Kostenfaktor für die Gesellschaft dar?", "antworten": {"A": "Neuromuskuläre Erkrankungen", "B": "Psychotische Störungen wie Schizophrenie", "C": "Affektive Störungen wie Depressionen", "D": "Demenzen wie die Alzheimer Erkrankung", "E": "Angststörungen"}, "richtig": "C", "nr": 153}, {"frage": "Wie viele von 100 Patienten mit behandlungsbedürftiger Depression erhalten adäquate Therapie?", "antworten": {"A": "1", "B": "11", "C": "21", "D": "31", "E": "41"}, "richtig": "B", "nr": 154}, {"frage": "Beurteilen Sie die folgende Situation: Zeynep fürchtet sich vor dem Autofahren. Sie beginnt eine Psychotherapie. Die Therapeutin schlägt vor, dass sie zuerst einmal ein Entspannungsverfahren lernt. Daraufhin macht Zeynep einen Kurs für autogenes Training. Dann bringt die Therapeutin ihr nach und nach bei, sich in Situationen, die mit dem Autofahren zu tun haben, zu entspannen. Erst lernt Zeynep entspannt in einem nicht-fahrenden Auto zu sitzen. Danach lernt sie, als Beifahrerin entspannt in einem Auto zu sitzen. Erst nachdem sie dies komplett gelernt hat, beginnt die Therapeutin, mit ihr das eigentliche Fahren zu trainieren. Wie würde man dieses Vorgehen in der Angsttherapie bezeichnen?", "antworten": {"A": "Schrittweise Konditionierung", "B": "Systematische Desensibilisierung", "C": "Flooding oder Reizüberflutung", "D": "Systemische Therapie", "E": "Operante Verhaltenstherapie"}, "richtig": "B", "nr": 155}, {"frage": "Was sind die beiden Hauptansätze in den psychologischen Forschungsmethoden?", "antworten": {"A": "Klassische und operante Methoden", "B": "Verdeckte und offene Verfahren", "C": "Statistische und deskriptive Methoden", "D": "Theoretische und praktische Methoden", "E": "Qualitative und quantitative Methoden"}, "richtig": "E", "nr": 156}, {"frage": "Welcher Bewegung ist Ernst Meumann zuzuordnen?", "antworten": {"A": "Praktische Psychologie", "B": "Psychoanalyse", "C": "Bewusstseinspsychologie", "D": "Differentielle Psychologie", "E": "Behaviorismus"}, "richtig": "A", "nr": 157}, {"frage": "Welche Theorie wurde von Aaron T. Beck begründet?", "antworten": {"A": "Die kognitive Theorie der Angst", "B": "Die kognitive Theorie der Schizophrenie", "C": "Die kognitive Theorie der Anorexie", "D": "Die kognitive Theorie der Zwangsstörung", "E": "Die kognitive Theorie der Depression"}, "richtig": "E", "nr": 158}, {"frage": "Was bezeichnet der Begriff SNP in der genetischen Psychologie?", "antworten": {"A": "Einen Chromosomen-Austausch", "B": "Einen Gen-Austausch", "C": "Einen Basen-Austausch", "D": "Einen DNA-Austausch", "E": "Einen RNA-Austausch"}, "richtig": "B", "nr": 159}, {"frage": "Welches Thema wurde in der Bobo-Doll Studie erforscht?", "antworten": {"A": "Klassische Konditionierung", "B": "Operante Konditionierung", "C": "Beobachtungslernen", "D": "Habituationslernen", "E": "Sensitivierung"}, "richtig": "C", "nr": 160}, {"frage": "Beurteilen Sie folgende Situation: John möchte in seiner Bachelor-Arbeit untersuchen, ob das Einkommen beeinflusst, ob jemand regelmäßig Avocado-Toast zum Frühstück isst. Leider sind Avocados ziemlich teuer. John bemerkt, dass viele potenzielle Probanden mit geringem Einkommen die Teilnahme an seiner Studie absagen. Er vermutet, dass dies daran liegt, dass diesen Menschen unangenehm ist, über das Thema Gehalt zu reden. Welche Form fehlender Daten liegt hier vor?", "antworten": {"A": "MCAR", "B": "MBAR", "C": "MAR", "D": "NMAR", "E": "MAB"}, "richtig": "D", "nr": 161}, {"frage": "Wer war der Begründer der Graphologie?", "antworten": {"A": "Alfred Binet", "B": "Jean-Hippolyte Michon", "C": "James McKeen Cattell", "D": "Richard von Krafft-Ebing", "E": "Johann Christian Reil"}, "richtig": "B", "nr": 162}, {"frage": "Beurteilen Sie die folgende Situation: Lena wertet ihre Bachelor-Arbeit aus. Das Ergebnis in einem Intelligenztest korreliert sehr hoch (r=0,98, p<0,001) mit dem Ergebnis eines Fragebogens zur Beziehungszufriedenheit. Welche Aussage kann auf Basis dieser Konstellation beurteilt werden und ist korrekt?", "antworten": {"A": "Die konvergente Validität ist hoch", "B": "Die konvergente Validität ist niedrig", "C": "Die diskriminante Validität ist hoch", "D": "Die diskriminante Validität ist niedrig", "E": "Die simultane Kriteriumsvalidität ist niedrig"}, "richtig": "D", "nr": 163}, {"frage": "Was unterscheidet ein Quasi-Experiment von einem Experiment?", "antworten": {"A": "Es gibt keine Möglichkeit, Interaktionseffekte zu testen", "B": "Es gibt keine Beurteilung durch eine Ethik-Kommission", "C": "Es gibt keine Kontrolle von Störvariablen", "D": "Es gibt keine Gruppen", "E": "Es gibt keine zufällige Zuordnung der Versuchspersonen zu den Gruppen"}, "richtig": "E", "nr": 164}, {"frage": "Die Mitglieder einer großen Partei sollen befragt werden. Dazu werden zuerst per Los 3 der 16 Landesverbände ausgewählt. Innerhalb jedes dieser 3 Landesverbände werden dann wiederum per Los 200 Mitglieder für die Befragung ausgewählt. Um welche Form der Stichprobenziehung handelt es sich dabei?", "antworten": {"A": "Quotenstichprobe", "B": "Theoretische Stichprobe", "C": "Klumpenstichprobe", "D": "Anfallende Stichprobe", "E": "Mehrstufige Zufallsstichprobe"}, "richtig": "E", "nr": 165}, {"frage": "Was ist die Deklaration von Helsinki?", "antworten": {"A": "Die methodischen Grundsätze für psychophysische Forschung", "B": "Die theoretischen Grundsätze der Testgütekriterien Validität und Reliabilität", "C": "Die ethischen Grundsätze für die medizinische Forschung am Menschen", "D": "Die physikalischen Grundsätze der funktionellen Magnetresonanztomographie", "E": "Die philosophischen Grundsätze der Bewusstseinsforschung"}, "richtig": "C", "nr": 166}, {"frage": "Was wurde durch das „Literary Digest Disaster“ eindrucksvoll gezeigt?", "antworten": {"A": "Ergebnisse aus sehr kleinen Stichproben sind meistens falsch, auch wenn die Stichprobe repräsentativ ist", "B": "Ergebnisse aus kleinen Stichproben sind meistens falsch, unabhängig von der Repräsentativität", "C": "Ergebnisse aus großen Stichproben sind meistens richtig, auch wenn die Stichprobe nicht repräsentativ ist", "D": "Ergebnisse aus sehr großen Stichproben können falsch sein, wenn die Stichprobe nicht repräsentativ ist", "E": "Keine dieser Antworten ist korrekt"}, "richtig": "D", "nr": 167}, {"frage": "Was ist der zentrale Vorteil von Experimenten mit mehrfaktoriellen Designs?", "antworten": {"A": "Sie erlauben das Testen von Haupteffekten.", "B": "Sie erlauben das Testen von Interaktionen.", "C": "Sie erlauben das Testen von Korrelationen.", "D": "Sie erlauben das Testen von Regressionen.", "E": "Sie erlauben das Testen von Autokorrelationen."}, "richtig": "B", "nr": 168}, {"frage": "In einer Stichprobe von 100 Personen leiden 50 an Depressionen, 50 tun dies nicht. Ein neuer Fragebogen zu Depressionen wird in dieser Gruppe eingesetzt. Das Testergebnis ist bei 95 Menschen negativ („keine Depression“) und bei 5 positiv („Depression“). Alle 5 Menschen mit einem positiven Testergebnis leiden auch an Depressionen. Von den 95 Menschen mit einem negativen Testergebnis leiden 45 an Depressionen, 50 tun es nicht. Welche Aussage ist korrekt?", "antworten": {"A": "Die Sensitivität beträgt 0%", "B": "Die Sensitivität beträgt 0,1%", "C": "Die Sensitivität beträgt 1%", "D": "Die Sensitivität beträgt 10%", "E": "Die Sensitivität beträgt 100%"}, "richtig": "D", "nr": 169}, {"frage": "Bewerten Sie die folgende Situation: Ben entwirft einen Intelligenztest und testet 100 Probanden am Montag. Alle 100 sind laut Test hochintelligent. Dann testet Ben dieselben Probanden mit demselben Test am Freitag. Jetzt sind 30 laut Test hochintelligent und 70 nicht sehr intelligent. Welche Aussage trifft zu?", "antworten": {"A": "Die Test-Retest-Reliabilität ist gering", "B": "Die Interrater-Reliabilität ist gering", "C": "Die Paralleltest-Reliabilität ist gering", "D": "Die Split-Half Reliabilität ist gering", "E": "Die interne Konsistenz ist gering"}, "richtig": "A", "nr": 170}, {"frage": "Welche ethischen Probleme tauchen spezifisch bei qualitativer Forschung auf, sind aber kein Problem in der quantitativen Forschung?", "antworten": {"A": "Ethische Probleme durch Täuschung", "B": "Ethische Probleme durch Intransparenz", "C": "Ethische Probleme durch Gefährdung der physischen Unversehrtheit", "D": "Ethische Probleme durch Gefährdung der psychischen Unversehrtheit", "E": "Ethische Probleme durch Selbstidentifikation"}, "richtig": "E", "nr": 171}, {"frage": "Wie unterscheidet sich ein Interview als psychologische Forschungsmethode von einem Alltagsgespräch?", "antworten": {"A": "Durch asymmetrische Gesprächsführung", "B": "Durch symmetrische Gesprächsführung", "C": "Durch ambivalente Gesprächsführung", "D": "Durch synergistische Gesprächsführung", "E": "Durch syntaktische Gesprächsführung"}, "richtig": "A", "nr": 172}, {"frage": "Nehmen Sie an, dass Frauen ein Risiko von 21,4% haben an einer Angststörung zu erkranken. Männer haben ein Risiko von 9,3%. Wie hoch ist die Odds Ratio (Frauen / Männer)?", "antworten": {"A": "0,2", "B": "2,3", "C": "2,7", "D": "12,1", "E": "12,3"}, "richtig": "C", "nr": 173}, {"frage": "Welche Aussage trifft in Bezug auf die Hauptursachen für verlorene Lebensjahre durch Tod oder Behinderung (DALY) zu?", "antworten": {"A": "Psychische Störungen spielen kaum eine Rolle", "B": "Psychische Störungen sind die Nr. 1 Hauptursache für verlorene Lebensjahre durch Tod oder Behinderung über alle Altersgruppen", "C": "Psychische Störungen sind die Nr. 1 Hauptursache für verlorene Lebensjahre durch Tod oder Behinderung für die Altersgruppe 0-14 Jahre", "D": "Psychische Störungen sind die Nr. 1 Hauptursache für verlorene Lebensjahre durch Tod oder Behinderung für die Altersgruppe 15-49 Jahre", "E": "Psychische Störungen sind die Nr. 1 Hauptursache für verlorene Lebensjahre durch Tod oder Behinderung für die Altersgruppe 50-99 Jahre"}, "richtig": "D", "nr": 174}, {"frage": "Wann und wo wurde das erste Psychologie-Labor der Welt gegründet?", "antworten": {"A": "1693 in Kopenhagen", "B": "1764 in Harvard", "C": "1879 in Leipzig", "D": "1884 in Berlin", "E": "1900 in Hamburg"}, "richtig": "C", "nr": 175}, {"frage": "Was ist der allererste Schritt in jeder wissenschaftlichen Arbeit?", "antworten": {"A": "Versuchspersonen rekrutieren", "B": "Daten auswerten", "C": "Ethik-Votum einholen", "D": "Forschungsfrage formulieren", "E": "Keine der Alternativen ist korrekt"}, "richtig": "D", "nr": 176}, {"frage": "Die 5 Skalen des NEO-FFI sind:", "antworten": {"A": "Neurotizismus, Extraversion, Offenheit, Funktionalität, Fitness", "B": "Neurotizismus, Extraversion, Offenheit, Verträglichkeit, Intelligenz", "C": "Neurotizismus, Extraversion, Offenheit, Verträglichkeit, Gewissenhaftigkeit", "D": "Neurotizismus, Extraversion, Offenheit, Verträglichkeit, Motivation", "E": "Keine der genannten Antworten ist korrekt"}, "richtig": "C", "nr": 177}, {"frage": "Die Messung der Hautleitfähigkeit ist eine besonders wichtige Forschungsmethode bei welchen Störungsbildern?", "antworten": {"A": "Depressionen & Borderline-Persönlichkeitsstörung", "B": "Posttraumatische Belastungsstörung & Angststörungen", "C": "Schizophrenie & Essstörungen", "D": "Zwangsstörungen & antisoziale Persönlichkeitsstörung", "E": "Bipolare Störung & Schlafstörungen"}, "richtig": "B", "nr": 178}, {"frage": "Wirkt sich das Alter auf die gefühlte Einsamkeit aus?", "antworten": {"A": "Nein.", "B": "Ja, das junge Erwachsenenalter und das hohe Lebensalter sind mit besonders hoher Einsamkeit verbunden.", "C": "Ja, das Kindesalter ist mit besonders hoher Einsamkeit verbunden.", "D": "Ja, das mittlere Lebensalter ist mit besonders hoher Einsamkeit verbunden.", "E": "Ja, alle Altersstufen bis auf die Kindheit sind mit besonders hoher Einsamkeit verbunden."}, "richtig": "B", "nr": 179}, {"frage": "Oswald Külpe gründete die ...", "antworten": {"A": "Münchener Schule der Sportpsychologie", "B": "Leipziger Schule der Psychophysik", "C": "Würzburger Schule der Denkpsychologie", "D": "Hamburger Schule der Sinnespsychologie", "E": "Berliner Schule der Psychotherapie"}, "richtig": "C", "nr": 180}, {"frage": "Wann entstehen nach Jung psychische Störungen?", "antworten": {"A": "Wenn Triebansprüche vom Ich ins Es verdrängt werden", "B": "Wenn bestimmte Archetypen in einem Menschen übermächtig werden", "C": "Wenn kulturelle Einflüsse die natürliche Umwelt zu sehr zurückdrängen", "D": "Wenn das persönliche Unterbewusste das kollektive Unterbewusste verdrängt", "E": "Wenn negative Gedanken über Selbst, andere Menschen und die Zukunft übermächtig werden"}, "richtig": "B", "nr": 181}, {"frage": "Beurteilen Sie bitte die folgende Situation: Anna hasst es, ihr Zimmer aufzuräumen. Ihre Mutter verspricht ihr, ihren Lieblingskuchen zu backen, wenn Anna ihr Zimmer aufräumt. Anna räumt ihr Zimmer auf und bekommt ein Stück leckeren Kirschkuchen. Sie freut sich. In der nächsten Woche fragt sie ihre Mutter, ob sie ihr Zimmer wieder aufräumen soll und es wieder Kuchen geben wird. Welcher im Kontext des Behaviorismus häufig untersuchte Lernprozess spielt hier eine Rolle?", "antworten": {"A": "Klassische Konditionierung", "B": "Moderne Konditionierung", "C": "Operante Konditionierung", "D": "Praktische Konditionierung", "E": "Keine der genannten Antworten ist korrekt"}, "richtig": "C", "nr": 182}, {"frage": "Bei welcher der folgenden Situationen ist die Therapiemethode „Flooding“ am erfolgversprechendsten?", "antworten": {"A": "Jürgen hat eine Reihe komplexer Ängste, unter anderem vor Hunden, Autos, Booten und Flugzeugen, aber auch Menschenmengen", "B": "Lisa leidet an der Borderline-Persönlichkeitsstörung. Zusätzlich hat sie mehrere Zwangsstörungen, unter anderem einen Waschzwang", "C": "Anne hat Angst vor Spinnen. Weitere Probleme hat sie nicht", "D": "Peter leidet an einer Binge-Eating Essstörung und depressiven Episoden", "E": "Marie hat eine antisoziale Persönlichkeitsstörung sowie Panikattacken"}, "richtig": "C", "nr": 183}, {"frage": "Der erste psychologische Intelligenztest wurde entwickelt von...", "antworten": {"A": "Arthur Kronfeld", "B": "James McKeen Cattell", "C": "Alfred Binet", "D": "Johann Christian Reil", "E": "Jean-Hippolyte Michon"}, "richtig": "C", "nr": 184}];
+let quiz = [];
+let index = 0;
+let correct = 0;
+let answered = false;
+let mode = "learn";
+let userAnswers = [];
+
+let challengeName = "";
+let challengeSeconds = 120;
+let challengeInterval = null;
+let challengeAnswered = 0;
+const LEADERBOARD_KEY = "forschungsmethodenChallengeLeaderboard_v1";
+
+
+const STATS_KEY = "forschungsmethodenQuizStats_v1";
+let questionStats = loadQuestionStats();
+
+function questionKey(q) {
+  return String(q.nr) + "::" + q.frage;
+}
+
+function loadQuestionStats() {
+  try {
+    const raw = localStorage.getItem(STATS_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+function saveQuestionStats() {
+  try {
+    localStorage.setItem(STATS_KEY, JSON.stringify(questionStats));
+  } catch {}
+}
+
+function recordAnswer(q, isCorrect) {
+  const key = questionKey(q);
+  if (!questionStats[key]) {
+    questionStats[key] = { attempts: 0, wrong: 0, correct: 0, lastWrong: 0 };
+  }
+  const s = questionStats[key];
+  s.attempts += 1;
+  if (isCorrect) {
+    s.correct += 1;
+  } else {
+    s.wrong += 1;
+    s.lastWrong = Date.now();
+  }
+  saveQuestionStats();
+  updateWeakModeInfo();
+renderLeaderboard();
+}
+
+function getWeakQuestions() {
+  return ALL_QUESTIONS
+    .map(q => {
+      const s = questionStats[questionKey(q)] || { attempts: 0, wrong: 0, correct: 0, lastWrong: 0 };
+      const wrongRate = s.attempts ? s.wrong / s.attempts : 0;
+      const score = s.wrong * 3 + wrongRate * 2 + (s.lastWrong ? 0.5 : 0);
+      return { q, s, score };
+    })
+    .filter(x => x.s.wrong > 0)
+    .sort((a, b) =>
+      b.score - a.score ||
+      b.s.wrong - a.s.wrong ||
+      b.s.lastWrong - a.s.lastWrong
+    )
+    .map(x => x.q);
+}
+
+function updateWeakModeInfo() {
+  const weak = getWeakQuestions();
+  const info = document.getElementById("weakModeInfo");
+  const btn = document.getElementById("weakModeBtn");
+  if (!info || !btn) return;
+
+  if (weak.length === 0) {
+    info.textContent = "Noch keine häufig falsch beantworteten Fragen gespeichert.";
+    btn.disabled = true;
+    btn.style.opacity = ".55";
+    btn.style.cursor = "not-allowed";
+  } else {
+    info.textContent = `${weak.length} schwierige Frage${weak.length === 1 ? "" : "n"} gespeichert.`;
+    btn.disabled = false;
+    btn.style.opacity = "1";
+    btn.style.cursor = "pointer";
+  }
+}
+
+function resetLearningStats() {
+  const ok = confirm("Gespeicherte Fehlerstatistik wirklich löschen?");
+  if (!ok) return;
+  questionStats = {};
+  try { localStorage.removeItem(STATS_KEY); } catch {}
+  updateWeakModeInfo();
+  alert("Die Fehlerstatistik wurde zurückgesetzt.");
+}
+
+
+const startScreen = document.getElementById("startScreen");
+const quizScreen = document.getElementById("quizScreen");
+const endScreen = document.getElementById("endScreen");
+const counter = document.getElementById("counter");
+const score = document.getElementById("score");
+const modeLabel = document.getElementById("modeLabel");
+const bar = document.getElementById("bar");
+const originalNr = document.getElementById("originalNr");
+const questionEl = document.getElementById("question");
+const answersEl = document.getElementById("answers");
+const feedback = document.getElementById("feedback");
+const nextBtn = document.getElementById("nextBtn");
+const quizMusic = document.getElementById("quizMusic");
+const musicToggle = document.getElementById("musicToggle");
+const volume = document.getElementById("musicVolume");
+
+const timerEl = document.getElementById("timer");
+const leaderboardBody = document.getElementById("leaderboardBody");
+
+
+const colorModeToggle = document.getElementById("colorModeToggle");
+const COLOR_MODE_KEY = "forschungsmethodenColorMode_v1";
+
+function applyColorMode(enabled) {
+  document.body.classList.toggle("color-mode-off", !enabled);
+  colorModeToggle.checked = enabled;
+  try {
+    localStorage.setItem(COLOR_MODE_KEY, enabled ? "on" : "off");
+  } catch {}
+  if (!enabled) {
+    document.documentElement.style.setProperty("--pulse", "0");
+  }
+}
+
+try {
+  const savedColorMode = localStorage.getItem(COLOR_MODE_KEY);
+  applyColorMode(savedColorMode !== "off");
+} catch {
+  applyColorMode(true);
+}
+
+colorModeToggle.addEventListener("change", () => {
+  applyColorMode(colorModeToggle.checked);
+});
+
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i=a.length-1;i>0;i--) {
+    const j=Math.floor(Math.random()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
+}
+
+
+function loadLeaderboard() {
+  try {
+    return JSON.parse(localStorage.getItem(LEADERBOARD_KEY) || "[]");
+  } catch {
+    return [];
+  }
+}
+
+function saveLeaderboard(entries) {
+  try {
+    localStorage.setItem(LEADERBOARD_KEY, JSON.stringify(entries.slice(0, 50)));
+  } catch {}
+}
+
+function renderLeaderboard() {
+  const entries = loadLeaderboard()
+    .sort((a, b) => b.correct - a.correct || b.answered - a.answered || a.time - b.time)
+    .slice(0, 10);
+
+  leaderboardBody.innerHTML = "";
+  if (!entries.length) {
+    leaderboardBody.innerHTML = '<tr><td colspan="5" class="small">Noch keine Ergebnisse vorhanden.</td></tr>';
+    return;
+  }
+
+  entries.forEach((entry, i) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td class="rank">${i + 1}.</td>
+      <td>${escapeHtml(entry.name)}</td>
+      <td><b>${entry.correct}</b></td>
+      <td>${entry.answered}</td>
+      <td>${new Date(entry.time).toLocaleDateString("de-DE")}</td>`;
+    leaderboardBody.appendChild(tr);
+  });
+}
+
+function escapeHtml(value) {
+  return String(value).replace(/[&<>"']/g, char => ({
+    "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#039;"
+  })[char]);
+}
+
+function resetLeaderboard() {
+  if (!confirm("Lokale Rangliste wirklich löschen?")) return;
+  try { localStorage.removeItem(LEADERBOARD_KEY); } catch {}
+  renderLeaderboard();
+}
+
+function startChallenge() {
+  const input = document.getElementById("playerName");
+  const name = input.value.trim();
+  if (!name) {
+    input.focus();
+    input.setCustomValidity("Bitte gib zuerst einen Namen ein.");
+    input.reportValidity();
+    input.setCustomValidity("");
+    return;
+  }
+
+  challengeName = name;
+  challengeSeconds = 120;
+  challengeAnswered = 0;
+  startMode("challenge");
+  startChallengeTimer();
+}
+
+function startChallengeTimer() {
+  clearInterval(challengeInterval);
+  updateTimerDisplay();
+  challengeInterval = setInterval(() => {
+    challengeSeconds -= 1;
+    updateTimerDisplay();
+    if (challengeSeconds <= 0) {
+      clearInterval(challengeInterval);
+      challengeInterval = null;
+      finishQuiz();
+    }
+  }, 1000);
+}
+
+function updateTimerDisplay() {
+  const min = Math.floor(challengeSeconds / 60);
+  const sec = challengeSeconds % 60;
+  timerEl.textContent = `${String(min).padStart(2,"0")}:${String(sec).padStart(2,"0")}`;
+  timerEl.classList.toggle("danger", challengeSeconds <= 15);
+}
+
+function saveChallengeResult() {
+  const entries = loadLeaderboard();
+  entries.push({
+    name: challengeName,
+    correct,
+    answered: challengeAnswered,
+    time: Date.now()
+  });
+  entries.sort((a, b) => b.correct - a.correct || b.answered - a.answered || a.time - b.time);
+  saveLeaderboard(entries);
+  renderLeaderboard();
+}
+
+
+function startMode(selectedMode) {
+  mode = selectedMode;
+  quizMusic.playbackRate = mode === "challenge" ? 1.5 : 1;
+  if (mode === "challenge") {
+    quiz = shuffle(ALL_QUESTIONS);
+  } else if (mode === "weak") {
+    quiz = getWeakQuestions();
+    if (quiz.length === 0) {
+      updateWeakModeInfo();
+      return;
+    }
+    quiz = shuffle(quiz);
+  } else {
+    quiz = shuffle(ALL_QUESTIONS);
+    if (mode === "exam") quiz = quiz.slice(0, Math.min(60, quiz.length));
+  }
+  index = 0; correct = 0; userAnswers = [];
+  startScreen.classList.add("hidden");
+  endScreen.classList.add("hidden");
+  quizScreen.classList.remove("hidden");
+  renderQuestion();
+}
+
+function renderQuestion() {
+  answered = false;
+  nextBtn.disabled = true;
+  feedback.textContent = "";
+  feedback.className = "feedback";
+
+  const q = quiz[index];
+  counter.textContent = mode === "challenge" ? `Frage ${index+1}` : `Frage ${index+1} / ${quiz.length}`;
+  score.textContent = mode === "exam" ? "Ergebnis am Ende" : `Richtig: ${correct}`;
+  modeLabel.textContent = mode === "exam" ? "Testklausur" : (mode === "weak" ? "Fehlerschwerpunkt" : (mode === "challenge" ? "2-Minuten-Challenge" : "Lernmodus"));
+  bar.style.width = mode === "challenge" ? `${((120-challengeSeconds)/120)*100}%` : `${(index/quiz.length)*100}%`;
+  timerEl.classList.toggle("hidden", mode !== "challenge");
+  originalNr.textContent = `Originalfrage ${q.nr}`;
+  questionEl.textContent = q.frage;
+  answersEl.innerHTML = "";
+
+  let entries = Object.entries(q.antworten);
+  if (document.getElementById("shuffleAnswers").checked) entries = shuffle(entries);
+
+  entries.forEach(([letter,text]) => {
+    const btn = document.createElement("button");
+    btn.className = "answer";
+    btn.innerHTML = `<span class="letter">${letter}</span>${text}`;
+    btn.onclick = () => chooseAnswer(letter, btn);
+    answersEl.appendChild(btn);
+  });
+}
+
+function chooseAnswer(letter, btn) {
+  if (answered) return;
+  answered = true;
+
+  const q = quiz[index];
+  const isCorrect = letter === q.richtig;
+  if (isCorrect) correct++;
+  userAnswers[index] = letter;
+  recordAnswer(q, isCorrect);
+
+  if (mode === "challenge") {
+    challengeAnswered += 1;
+    [...answersEl.children].forEach(b => b.disabled = true);
+    setTimeout(() => {
+      if (mode === "challenge" && challengeSeconds > 0) nextQuestion();
+    }, 90);
+    return;
+  }
+
+  if (mode === "learn" || mode === "weak") {
+    [...answersEl.children].forEach(b => {
+      b.disabled = true;
+      const l = b.querySelector(".letter").textContent;
+      if (l === q.richtig) b.classList.add("correct");
+      if (l === letter && !isCorrect) b.classList.add("wrong");
+    });
+    feedback.textContent = isCorrect ? "Richtig!" : `Falsch. Richtig ist ${q.richtig}.`;
+    feedback.classList.add(isCorrect ? "ok" : "bad");
+  } else {
+    [...answersEl.children].forEach(b => b.classList.remove("selected"));
+    btn.classList.add("selected");
+    [...answersEl.children].forEach(b => b.disabled = true);
+  }
+
+  nextBtn.disabled = false;
+  nextBtn.textContent = index === quiz.length-1 ? "Auswertung" : "Nächste Frage";
+}
+
+function nextQuestion() {
+  if (!answered) return;
+  index++;
+  if (mode === "challenge" && index >= quiz.length) {
+    quiz = shuffle(ALL_QUESTIONS);
+    index = 0;
+  }
+  if (index >= quiz.length) finishQuiz();
+  else renderQuestion();
+}
+
+function finishQuiz() {
+  clearInterval(challengeInterval);
+  challengeInterval = null;
+  if (mode === "challenge") quizMusic.playbackRate = 1;
+  quizScreen.classList.add("hidden");
+  endScreen.classList.remove("hidden");
+  timerEl.classList.add("hidden");
+  bar.style.width = "100%";
+
+  if (mode === "challenge") {
+    saveChallengeResult();
+    document.getElementById("finalResult").innerHTML =
+      `<b>${escapeHtml(challengeName)}</b>, du hast in 2 Minuten <b>${correct}</b> Fragen richtig beantwortet ` +
+      `(${challengeAnswered} beantwortet). Dein Ergebnis wurde in der lokalen Rangliste gespeichert.`;
+    document.getElementById("reviewBtn").classList.add("hidden");
+    document.getElementById("review").innerHTML = "";
+    return;
+  }
+
+  document.getElementById("reviewBtn").classList.remove("hidden");
+  const pct = Math.round((correct/quiz.length)*100);
+  document.getElementById("finalResult").innerHTML =
+    `<b>${correct} von ${quiz.length}</b> richtig (${pct} %).` +
+    (mode === "exam"
+      ? (pct >= 50 ? " Die Testklausur wäre bestanden." : " Die Testklausur wäre nicht bestanden.")
+      : (mode === "weak" ? " Deine Fehlerstatistik wurde aktualisiert." : ""));
+  buildReview();
+}
+
+function buildReview() {
+  const review = document.getElementById("review");
+  review.innerHTML = "";
+  quiz.forEach((q,i) => {
+    const chosen = userAnswers[i] || "—";
+    const item = document.createElement("div");
+    item.className = "review-item";
+    const ok = chosen === q.richtig;
+    item.innerHTML = `<b>${i+1}. ${q.frage}</b>
+      Deine Antwort: ${chosen} ${chosen !== "—" ? "– " + q.antworten[chosen] : ""}<br>
+      Richtige Antwort: ${q.richtig} – ${q.antworten[q.richtig]}<br>
+      <span style="font-weight:700;color:${ok ? "var(--ok)" : "var(--bad)"}">${ok ? "Richtig" : "Falsch"}</span>`;
+    review.appendChild(item);
+  });
+}
+
+function toggleReview() {
+  const review = document.getElementById("review");
+  review.classList.toggle("hidden");
+  document.getElementById("reviewBtn").textContent =
+    review.classList.contains("hidden") ? "Antworten anzeigen" : "Antworten ausblenden";
+}
+
+function restartQuiz() {
+  clearInterval(challengeInterval);
+  challengeInterval = null;
+  quizMusic.playbackRate = 1;
+  timerEl.classList.add("hidden");
+  quizScreen.classList.add("hidden");
+  endScreen.classList.add("hidden");
+  startScreen.classList.remove("hidden");
+  document.getElementById("review").classList.add("hidden");
+  updateWeakModeInfo();
+}
+
+musicToggle.addEventListener("click", async () => {
+  if (quizMusic.paused) {
+    try { await quizMusic.play(); musicToggle.textContent = "⏸ Pause"; }
+    catch { musicToggle.textContent = "▶ Musik"; }
+  } else {
+    quizMusic.pause();
+    musicToggle.textContent = "▶ Musik";
+  }
+});
+volume.addEventListener("input", () => quizMusic.volume = Number(volume.value));
+quizMusic.volume = Number(volume.value);
+updateWeakModeInfo();
+
+// Audio-reactive background using Web Audio API
+let audioCtx, analyser, sourceNode, dataArray, reactiveStarted = false;
+async function startReactiveBackground() {
+  if (reactiveStarted) return;
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  analyser = audioCtx.createAnalyser();
+  analyser.fftSize = 256;
+  sourceNode = audioCtx.createMediaElementSource(quizMusic);
+  sourceNode.connect(analyser);
+  analyser.connect(audioCtx.destination);
+  dataArray = new Uint8Array(analyser.frequencyBinCount);
+  reactiveStarted = true;
+  animateBackground();
+}
+function animateBackground() {
+  analyser.getByteFrequencyData(dataArray);
+  let sum = 0;
+  for (const v of dataArray) sum += v;
+  const level = Math.min(1, (sum / dataArray.length) / 125);
+  if (colorModeToggle.checked) document.documentElement.style.setProperty("--pulse", level.toFixed(3));
+  if (!document.hidden) requestAnimationFrame(animateBackground);
+}
+quizMusic.addEventListener("play", async () => {
+  await startReactiveBackground();
+  if (audioCtx && audioCtx.state === "suspended") await audioCtx.resume();
+});
+quizMusic.addEventListener("pause", () => {
+  document.documentElement.style.setProperty("--pulse", "0");
+  musicToggle.textContent = "▶ Musik";
+});
+</script>
+</body>
+</html>
